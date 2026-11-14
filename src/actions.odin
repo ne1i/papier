@@ -1,18 +1,15 @@
 package papier
 
 // What the user can do in the window, named once: each action's label, group, keys and icon (gui_toolkit's commands). The
-// same table gives the keys, the entry menu's shortcuts, the tooltips, the command palette (Ctrl+K) and the sheet of the
-// keys (F1). The moves of the selection (the arrows, Page Up/Down, Ctrl+Home/End, Alt+1…9) and Escape stay in view_keys:
+// same table gives the keys, the entry menu's shortcuts, the tooltips, the toolkit's command palette (Ctrl+K, its own
+// command) and the sheet of the keys (F1). The moves of the selection (the arrows, Page Up/Down, Ctrl+Home/End, Alt+1…9) and Escape stay in view_keys:
 // they are the list's, not commands.
 //
 // An action on entries acts on the rows selected (the toolkit's selection: Ctrl, Shift and Ctrl+Shift clicks, Shift and
 // the moves, Ctrl+Space, Ctrl+Shift+A), or on the cursor's row when none is. What shows one entry (the preview, Edit,
 // Open, Save as, the QR code) is the cursor's.
 
-import "base:runtime"
-import "core:mem/virtual"
 import "core:slice"
-import "core:strings"
 import prefs_page "gt:prefs_page"
 import i18n "gt:i18n"
 import "gt:ui"
@@ -23,7 +20,7 @@ Action :: enum u8 {
 	Copy, Copy_Plain, Edit, Open, Save_As, Pin, Remove, Show_QR, Copy_Qr_Content, Copy_Image_Text, Toggle_Markdown_Source,
 	Select_All, Select_One,
 	Filter_All, Filter_Text, Filter_Images, Filter_Files, Filter_Pinned, Filter_Next, Filter_Previous,
-	Clear_History, Settings, Check_Updates, Palette, Shortcuts, Hide, Restart, Quit,
+	Clear_History, Settings, Check_Updates, Shortcuts, Hide, Restart, Quit,
 }
 
 ACTIONS := [Action]ui.Command{
@@ -50,7 +47,6 @@ ACTIONS := [Action]ui.Command{
 	.Clear_History   = {label = i18n.later("Clear the history (pinned entries stay)"), group = i18n.later("papier"), icon = lucide.TRASH_2, tags = {"wipe", "erase", "empty"}},
 	.Settings        = {label = i18n.later("Settings"), group = i18n.later("papier"), keys = {{.Comma, {.Ctrl}}}, icon = lucide.SETTINGS, tags = {"preferences", "options", "configure"}, scope = .Window},
 	.Check_Updates   = {label = i18n.later("Check for updates"), group = i18n.later("papier"), icon = lucide.REFRESH_CW, tags = {"upgrade", "version", "new"}},
-	.Palette         = {label = i18n.later("Command palette"), group = i18n.later("papier"), keys = {{.K, {.Ctrl}}, {.P, {.Ctrl, .Shift}}}, icon = lucide.COMMAND, scope = .Window},
 	.Shortcuts       = {label = i18n.later("Keyboard shortcuts"), group = i18n.later("papier"), keys = {{.F1, {}}}, icon = lucide.KEYBOARD, tags = {"help", "keys", "hotkeys"}, scope = .Window},
 	.Hide            = {label = i18n.later("Hide the window"), group = i18n.later("papier"), icon = lucide.X, tags = {"close", "dismiss"}, scope = .Window},
 	.Restart         = {label = i18n.later("Restart papier"), group = i18n.later("papier"), icon = lucide.ROTATE_CCW, tags = {"reload", "relaunch"}},
@@ -104,7 +100,7 @@ action_enabled :: proc(app: ^App, a: Action) -> bool {
 	case .Filter_Pinned: return PINS
 	case .Clear_History: return len(app.list.entries) > 0
 	case .Filter_All, .Filter_Text, .Filter_Images, .Filter_Files, .Filter_Next, .Filter_Previous,
-	     .Settings, .Check_Updates, .Palette, .Shortcuts, .Hide, .Restart, .Quit:
+	     .Settings, .Check_Updates, .Shortcuts, .Hide, .Restart, .Quit:
 		return true
 	}
 	return false
@@ -160,7 +156,7 @@ action_run :: proc(app: ^App, a: Action) {
 	case .Clear_History: watcher_send(&app.watcher, {verb = .Clear})
 	case .Settings:      settings_toggle(app)
 	case .Check_Updates: update_check_asked(app)
-	case .Palette:       palette_show(app)
+	// (the sheet adds the toolkit's palette command itself)
 	case .Shortcuts:     ui.shortcuts_sheet_open(&app.sheet, slice.enumerated_array(&ACTIONS), i18n.tr("papier's keys"))
 	case .Hide:          app_hide(app)
 	case .Restart:       app_restart(app, hidden = false)
@@ -168,8 +164,10 @@ action_run :: proc(app: ^App, a: Action) {
 	}
 }
 
-// The keys of the window's actions (scope .Window): in every page and mode, before anything else reads a key.
+// The keys of the window's actions (scope .Window): in every page and mode, before anything else reads a key. The
+// palette's first: its keys are the toolkit's, read by its own reader.
 window_keys :: proc(app: ^App) {
+	if palette_keys(app) { return }
 	for a in Action {
 		if ACTIONS[a].scope != .Window { continue }
 		if ui.command_pressed(ACTIONS[a], !action_enabled(app, a)) { action_run(app, a); return }
@@ -184,91 +182,78 @@ actions_keys :: proc(app: ^App) {
 	}
 }
 
-// The palette's table: the actions, then every setting (one chosen opens the settings on it alone), then the moves of
-// each open view (float it, dock it, put it in a window of its own, re-attach it, close it). Made when the preferences,
-// the language or the views change, not at each frame: the titles are translated when it is made.
-Palette_Table :: struct {
-	arena:    virtual.Arena,
-	commands: []ui.Command,
-	names:    []string,             // the setting each command after the actions names
-	acts:     []ui.View_Command,    // what each command after the settings does (its strings in the arena)
-	prefs:    u64,                  // the preferences' version it was made for (0: not made)
-	language: u32,                  // i18n.version() it was made in: a change of language makes it again
-	views:    u64,                  // ui.views_version it was made for
-	version:  u64,                  // bumped at each making (Palette_Options.version)
+// The palette is the toolkit's (gui_toolkit's src/md/features/palette.md): its commands source lists the actions, and
+// beside them the views' moves; prefs_page's settings source lists the settings (`:`). Papier fills no other prefix:
+// its history is the window itself, searched in its title bar. The toolkit runs the choices of its own sources.
+Palette_State :: struct {
+	disabled: [Action]bool,   // the actions that cannot act, as the commands source last took them
+	version:  u64,            // moves with `made_for`: the source compares it, never the table
+	made_for: Can_Act_Key,    // what `disabled` was read for ({}: never)
+	settings: prefs_page.Palette_Settings,
 }
 
-palette_table_destroy :: proc(t: ^Palette_Table) {
-	virtual.arena_destroy(&t.arena)
-	t^ = {}
+// What action_enabled reads, by versions and ids: the selection and its active row (the toolkit's version), the rows
+// shown (ids_version: papier's own moves of the cursor go with it), the cursor's answer of the reader and picture, a
+// reading of OCR, the history's size. A change of one reads `disabled` again; else nothing is read.
+Can_Act_Key :: struct {
+	made:          bool,
+	selection:     u64,
+	rows:          u64,
+	loaded:        [2]u64,
+	view:          [2]u64,
+	view_qr:       bool,
+	ocr_reading:   u64,
+	ocr_offered:   bool,
+	entries:       int,
 }
 
-// Made again when what it lists changed; true when it was.
 @(private = "file")
-palette_table_keep :: proc(app: ^App) -> bool {
-	t := &app.palette_table
-	views := ui.views_version(&app.views)
-	if t.prefs == app.prefs.version + 1 && t.language == i18n.version() && t.views == views { return false }
-	virtual.arena_free_all(&t.arena)
-	a := virtual.arena_allocator(&t.arena)
-	settings, names := prefs_page.palette_commands(&app.prefs, settings_options(app), a)
-	moves, acts := palette_view_moves(app, a)
-	t.commands = slice.concatenate([][]ui.Command{slice.enumerated_array(&ACTIONS), settings, moves}, a)
-	t.names, t.acts = names, acts
-	t.prefs, t.language, t.views = app.prefs.version + 1, i18n.version(), views
-	t.version += 1
+can_act_key :: proc(app: ^App) -> Can_Act_Key {
+	return {
+		made = true, selection = app.vl.selection.version, rows = app.ids_version,
+		loaded = {app.loaded.id, app.loaded.key}, view = {app.view.id, app.view.key}, view_qr = app.view.has_tex && app.view.qr != "",
+		ocr_reading = app.ocr_reading, ocr_offered = app.ocr_offered, entries = len(app.list.entries),
+	}
+}
+
+// The usage memory and the settings source, once the window, the updater and the install are made. The source asks
+// for the page's options when it reads or acts: the themes read again or a new registry need nothing here.
+palette_init :: proc(app: ^App) {
+	ui.palette_memory_open(&app.palette, &app.main.state, palette_choices_path())
+	open :: proc(user: rawptr) { (^App)(user).settings_open = true }
+	options :: proc(user: rawptr) -> prefs_page.Page_Options { return settings_options((^App)(user)) }
+	prefs_page.palette_settings_add(&app.palette, &app.palette_state.settings, &app.prefs, &app.settings_page, options, open, app)
+}
+
+// The actions and what can act now, given to the commands source. `disabled` is read again only when what it depends
+// on moved (Can_Act_Key); its version moves with it.
+@(private = "file")
+palette_give :: proc(app: ^App) {
+	ps := &app.palette_state
+	if key := can_act_key(app); key != ps.made_for {
+		for a in Action { ps.disabled[a] = !action_enabled(app, a) }
+		ps.made_for = key
+		ps.version += 1
+	}
+	ui.palette_commands(&app.palette, slice.enumerated_array(&ACTIONS), slice.enumerated_array(&ps.disabled), {version = ps.version})
+}
+
+// Ctrl+K and Ctrl+Shift+P (the toolkit's command, read by its one reader): the palette opens, on what can act now, or
+// closes. True when they were pressed.
+palette_keys :: proc(app: ^App) -> bool {
+	if !ui.palette_keys(&app.palette) { return false }
+	palette_give(app)
 	return true
 }
 
-// The views' commands, but the palette's own (it is open while they are listed: moving it from itself is no help).
-// Their ids are copied: a view's strings go when it closes.
-@(private = "file")
-palette_view_moves :: proc(app: ^App, a: runtime.Allocator) -> (commands: []ui.Command, acts: []ui.View_Command) {
-	all, all_acts := ui.views_commands(&app.views, a)
-	out := make([dynamic]ui.Command, 0, len(all), a)
-	out_acts := make([dynamic]ui.View_Command, 0, len(all), a)
-	for c, i in all {
-		act := all_acts[i]
-		if act.id == ui.PALETTE_VIEW { continue }
-		act.id, act.instance = strings.clone(act.id, a), strings.clone(act.instance, a)
-		append(&out, c)
-		append(&out_acts, act)
-	}
-	return out[:], out_acts[:]
-}
-
-// What the palette lists, given to it; which actions can act now is read here (nothing else changes them while the
-// palette has the keyboard).
-@(private = "file")
-palette_give :: proc(app: ^App) {
-	t := &app.palette_table
-	disabled := make([]bool, len(t.commands), context.temp_allocator)
-	for a in Action { disabled[int(a)] = !action_enabled(app, a) }
-	ui.palette_set(&app.palette, t.commands, disabled, {version = t.version})
-}
-
-// Ctrl+K: the palette, on what can act now.
-@(private = "file")
-palette_show :: proc(app: ^App) {
-	palette_table_keep(app)
-	palette_give(app)
-	ui.palette_open(&app.palette)
-}
-
-// The palette's choice, and its table kept while it is open (in the window's build).
+// The palette's choice (the toolkit's sources act in it), and what can act kept while it is open: at each build.
 actions_build :: proc(app: ^App) {
-	t := &app.palette_table
-	// (the choice is an index in the table it was made from: taken before the table is made again)
-	if i, _, ok := ui.palette_chosen(&app.palette); ok && i < len(t.commands) {
-		settings_end := len(Action) + len(t.names)
-		switch {
-		case i < len(Action):   action_run(app, Action(i))
-		case i < settings_end:  settings_show(app, t.names[i - len(Action)])
-		case:                   ui.views_command_run(&app.views, t.acts[i - settings_end])
-		}
+	if c, ok := ui.palette_chosen(&app.palette); ok {
+		if i, is := ui.palette_chosen_command(&app.palette, c); is && i >= 0 && i < len(Action) { action_run(app, Action(i)) }
 	}
-	if ui.palette_is_open(&app.palette) && palette_table_keep(app) { palette_give(app) }
+	if ui.palette_is_open(&app.palette) { palette_give(app) }
 }
+
 
 // A tooltip: the action's label and its key.
 action_tip :: proc(a: Action) -> string { return ui.command_tip(ACTIONS[a]) }

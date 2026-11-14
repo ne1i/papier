@@ -82,9 +82,6 @@ fr Réglages
 en Check for updates
 fr Rechercher des mises à jour
 
-en Command palette
-fr Palette de commandes
-
 en Keyboard shortcuts
 fr Raccourcis clavier
 

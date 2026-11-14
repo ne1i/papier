@@ -46,7 +46,7 @@ full beside the list.
 | Shift+Up, Shift+Down, Ctrl+Shift+Home, Ctrl+Shift+End | the range from the last entry chosen to the cursor (with Ctrl+Shift+Up and Down: added to what is selected) |
 | Ctrl+Up, Ctrl+Down, Ctrl+Space | moves the cursor alone; adds or takes out the entry under it. The preview shows the cursor's entry |
 | Ctrl+Shift+A | selects every entry shown |
-| Ctrl+K, Ctrl+Shift+P | the command palette: every action, searched as you type |
+| Ctrl+K, Ctrl+Shift+P | the command palette: every action and setting, searched as you type (`>` actions, `:` settings) |
 | F1 | the sheet of the keys |
 | a right click, Menu, Shift+F10 | the entry's menu |
 | a drag of an entry | out of the window, into another program: its text, its picture, its files |
@@ -105,11 +105,18 @@ entry, the one the preview shows.
 
 ![The command palette](screenshots/palette.png)
 
-Ctrl+K opens every action of papier in a dialog, under their groups: the entry's, the selection's, the filters', papier's own
-(the settings, the setup, a check for updates, the sheet of the keys, restart, quit), then every setting under its page.
-A setting chosen opens the settings on it alone, its page underneath. Type to keep the ones whose words begin as typed;
-Enter runs the first. An action that cannot act now is grey. The palette's keys, the menus' and the tooltips' come from
-one table (`src/actions.odin`).
+Ctrl+K (or Ctrl+Shift+P) opens the palette, the same as in the other programs made with gui_toolkit. With nothing
+typed, it lists what you chose most recently, then every action of papier under its group: the entry's, the
+selection's, the filters', papier's own (the settings, the setup, a check for updates, the sheet of the keys, restart,
+quit). Type to search the actions, the settings and the moves of the dialogs together; Enter runs the first.
+
+- `>` at the start searches the actions and the moves of the dialogs only.
+- `:` searches the settings only. A switch chosen flips and the palette stays open; another setting opens the settings
+  on it alone, its page underneath.
+
+An action that cannot act now is grey and listed last. The palette remembers what you choose (`palette_choices.txt` in
+papier's state folder) and puts it first next time. The palette's keys, the menus' and the tooltips' come from one
+table (`src/actions.odin`).
 
 ## Where a dialog goes
 

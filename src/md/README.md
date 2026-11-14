@@ -50,3 +50,5 @@ the files, the tests) is [docs/architecture.md](../../docs/architecture.md).
   transaction per change, keys, limits, the import of 0.4
 - [features/window.md](features/window.md): how the window stays consistent with late answers: the list and its view,
   the numbered search, the selected entry, thumbnails, OCR
+- [features/palette.md](features/palette.md): the toolkit's palette, what papier fills (`>`, `:`) and why no `@`,
+  what can act as a version, the usage memory

@@ -80,12 +80,6 @@ settings_options :: proc(app: ^App) -> prefs_page.Page_Options {
 	}
 }
 
-// A setting chosen in the palette: the settings, on it alone.
-settings_show :: proc(app: ^App, name: string) {
-	app.settings_open = true
-	prefs_page.show(&app.settings_page, &app.prefs, settings_options(app), name)
-}
-
 // A preference was set or reset: papier's settings read again, handed to the watcher; the standard ones are applied by
 // standard_watch already. The preferences' writer saves the file at the next turn of the loop (app_run), off this thread.
 @(private = "file")

@@ -99,8 +99,8 @@ App :: struct {
 	drag:       Drag_Out,           // an entry dragged out of the list (drag.odin)
 	thumbs:     Thumbs,             // the list's thumbnails (thumbs.odin)
 	views:      ui.Views,           // the dialogs, wherever the user puts them, and how each was last shown (views.txt)
-	palette:    ui.Command_Palette, // Ctrl+K: every action (actions.odin)
-	palette_table: Palette_Table,   // what it lists
+	palette:    ui.Command_Palette, // Ctrl+K: the toolkit's, over the actions and the settings (actions.odin)
+	palette_state: Palette_State,   // what papier gives it
 	sheet:      ui.Shortcuts_Sheet, // F1: the sheet of the keys
 	qr:         Qr_View,            // an entry as a QR code (qr.odin)
 	menu:       Entry_Menu,         // the entry's menu (entry_menu.odin)
@@ -209,6 +209,8 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	app_updates_start(app)
 	// (the install read on a task: setup_follow; offered on Windows, at a start that shows the window)
 	prefs_page.install_offer(&app.install, &h.state, offer = ODIN_OS == .Windows && !hidden && !setup_asked)
+	// (the settings source points at the page's options: the updater and the install are made now)
+	palette_init(app)
 	app.tray = platform.tray_create(win, LOGO_PNG, "papier")
 	app_tray_menu(app)
 
@@ -286,7 +288,6 @@ app_free :: proc(app: ^App) {
 	ui.line_edit_destroy(&app.search)
 	ui.vlist_destroy(&app.vl)
 	ui.palette_destroy(&app.palette)
-	palette_table_destroy(&app.palette_table)
 	ui.shortcuts_sheet_destroy(&app.sheet)
 	qr_destroy(app)
 	entry_menu_free(&app.menu)
@@ -615,6 +616,8 @@ app_job_done :: proc(app: ^App, d: ^Job_Done) {
 			settings_free(&app.settings)
 			app.settings = prefs_read(&app.prefs)
 			app.announcer.mode = app.settings.messages
+			// (the palette's settings were read from the old registry: a policy may fix other ones in the new)
+			app.palette_state.settings.source.version += 1
 			app_shortcut(app)
 			app_updates_auto(app)
 			app_title_follow(app)
