@@ -69,6 +69,11 @@ state_path :: proc(allocator := context.temp_allocator) -> string {
 	return strings.concatenate({platform.user_dir(.State, APP_NAME, context.temp_allocator), "/window"}, allocator)
 }
 
+// Where the views remember how the user shows each dialog (gui_toolkit's views): the user's state folder, "views.txt".
+views_path :: proc(allocator := context.temp_allocator) -> string {
+	return strings.concatenate({platform.user_dir(.State, APP_NAME, context.temp_allocator), "/views.txt"}, allocator)
+}
+
 // The registry with the user's file and `args`' --pref read in. Returns the arguments that are not preferences.
 // `descriptions`: where the toolkit's standard preferences make their descriptions, which the registry keeps and never
 // frees (a registry read for one turn of a loop gives its temporary allocator).

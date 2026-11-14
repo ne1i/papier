@@ -8,8 +8,10 @@ package papier
 // An action on entries acts on the marked rows (a Ctrl or Shift click, Ctrl+Shift+A), or on the selected one when none is
 // marked.
 
+import "base:runtime"
 import "core:mem/virtual"
 import "core:slice"
+import "core:strings"
 import prefs_page "gt:prefs_page"
 import i18n "gt:i18n"
 import "gt:ui"
@@ -159,8 +161,8 @@ action_run :: proc(app: ^App, a: Action) {
 	case .Clear_History: watcher_send(&app.watcher, {verb = .Clear})
 	case .Settings:      settings_toggle(app)
 	case .Check_Updates: update_check_asked(app)
-	case .Palette:       ui.palette_open(&app.palette)
-	case .Shortcuts:     app.sheet.open = true
+	case .Palette:       palette_show(app)
+	case .Shortcuts:     ui.shortcuts_sheet_open(&app.sheet, slice.enumerated_array(&ACTIONS), i18n.tr("papier's keys"))
 	case .Hide:          app_hide(app)
 	case .Restart:       app_restart(app, hidden = false)
 	case .Quit:          app.quit = true
@@ -174,15 +176,18 @@ actions_keys :: proc(app: ^App) {
 	}
 }
 
-// The palette's table: the actions, then every setting (one chosen opens the settings on it alone). Made when the
-// preferences or the language change, not at each frame: the settings' titles are translated when it is made.
+// The palette's table: the actions, then every setting (one chosen opens the settings on it alone), then the moves of
+// each open view (float it, dock it, put it in a window of its own, re-attach it, close it). Made when the preferences,
+// the language or the views change, not at each frame: the titles are translated when it is made.
 Palette_Table :: struct {
 	arena:    virtual.Arena,
 	commands: []ui.Command,
-	names:    []string,      // the setting each command after the actions names
-	prefs:    u64,           // the preferences' version it was made for (0: not made)
-	language: u32,           // i18n.version() it was made in: a change of language makes it again
-	version:  u64,           // bumped at each making (Palette_Options.version)
+	names:    []string,             // the setting each command after the actions names
+	acts:     []ui.View_Command,    // what each command after the settings does (its strings in the arena)
+	prefs:    u64,                  // the preferences' version it was made for (0: not made)
+	language: u32,                  // i18n.version() it was made in: a change of language makes it again
+	views:    u64,                  // ui.views_version it was made for
+	version:  u64,                  // bumped at each making (Palette_Options.version)
 }
 
 palette_table_destroy :: proc(t: ^Palette_Table) {
@@ -190,31 +195,71 @@ palette_table_destroy :: proc(t: ^Palette_Table) {
 	t^ = {}
 }
 
+// Made again when what it lists changed; true when it was.
 @(private = "file")
-palette_table_keep :: proc(app: ^App) {
+palette_table_keep :: proc(app: ^App) -> bool {
 	t := &app.palette_table
-	if t.prefs == app.prefs.version + 1 && t.language == i18n.version() { return }
+	views := ui.views_version(&app.views)
+	if t.prefs == app.prefs.version + 1 && t.language == i18n.version() && t.views == views { return false }
 	virtual.arena_free_all(&t.arena)
 	a := virtual.arena_allocator(&t.arena)
 	settings, names := prefs_page.palette_commands(&app.prefs, settings_options(app), a)
-	t.commands = slice.concatenate([][]ui.Command{slice.enumerated_array(&ACTIONS), settings}, a)
-	t.names = names
-	t.prefs, t.language = app.prefs.version + 1, i18n.version()
+	moves, acts := palette_view_moves(app, a)
+	t.commands = slice.concatenate([][]ui.Command{slice.enumerated_array(&ACTIONS), settings, moves}, a)
+	t.names, t.acts = names, acts
+	t.prefs, t.language, t.views = app.prefs.version + 1, i18n.version(), views
 	t.version += 1
+	return true
 }
 
-// The palette and the sheet of the keys, when they are open (at the end of the window's build).
+// The views' commands, but the palette's own (it is open while they are listed: moving it from itself is no help).
+// Their ids are copied: a view's strings go when it closes.
+@(private = "file")
+palette_view_moves :: proc(app: ^App, a: runtime.Allocator) -> (commands: []ui.Command, acts: []ui.View_Command) {
+	all, all_acts := ui.views_commands(&app.views, a)
+	out := make([dynamic]ui.Command, 0, len(all), a)
+	out_acts := make([dynamic]ui.View_Command, 0, len(all), a)
+	for c, i in all {
+		act := all_acts[i]
+		if act.id == ui.PALETTE_VIEW { continue }
+		act.id, act.instance = strings.clone(act.id, a), strings.clone(act.instance, a)
+		append(&out, c)
+		append(&out_acts, act)
+	}
+	return out[:], out_acts[:]
+}
+
+// What the palette lists, given to it; which actions can act now is read here (nothing else changes them while the
+// palette has the keyboard).
+@(private = "file")
+palette_give :: proc(app: ^App) {
+	t := &app.palette_table
+	disabled := make([]bool, len(t.commands), context.temp_allocator)
+	for a in Action { disabled[int(a)] = !action_enabled(app, a) }
+	ui.palette_set(&app.palette, t.commands, disabled, {version = t.version})
+}
+
+// Ctrl+K: the palette, on what can act now.
+@(private = "file")
+palette_show :: proc(app: ^App) {
+	palette_table_keep(app)
+	palette_give(app)
+	ui.palette_open(&app.palette)
+}
+
+// The palette's choice, and its table kept while it is open (in the window's build).
 actions_build :: proc(app: ^App) {
-	if app.palette.open {
-		palette_table_keep(app)
-		t := &app.palette_table
-		disabled := make([]bool, len(t.commands), context.temp_allocator)
-		for a in Action { disabled[int(a)] = !action_enabled(app, a) }
-		if i, _ := ui.palette(&app.palette, t.commands, disabled, {version = t.version}); i >= 0 {
-			if i < len(Action) { action_run(app, Action(i)) } else { settings_show(app, t.names[i - len(Action)]) }
+	t := &app.palette_table
+	// (the choice is an index in the table it was made from: taken before the table is made again)
+	if i, _, ok := ui.palette_chosen(&app.palette); ok && i < len(t.commands) {
+		settings_end := len(Action) + len(t.names)
+		switch {
+		case i < len(Action):   action_run(app, Action(i))
+		case i < settings_end:  settings_show(app, t.names[i - len(Action)])
+		case:                   ui.views_command_run(&app.views, t.acts[i - settings_end])
 		}
 	}
-	ui.shortcuts_sheet(&app.sheet, "keys", slice.enumerated_array(&ACTIONS), i18n.tr("papier's keys"))
+	if ui.palette_is_open(&app.palette) && palette_table_keep(app) { palette_give(app) }
 }
 
 // A tooltip: the action's label and its key.

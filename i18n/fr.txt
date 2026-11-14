@@ -213,6 +213,9 @@ fr Épingler
 en Save the entry
 fr Enregistrer l'élément
 
+en QR code
+fr Code QR
+
 en No program opens addresses
 fr Aucun programme n'ouvre les adresses
 

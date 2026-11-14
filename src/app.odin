@@ -98,6 +98,7 @@ App :: struct {
 	loaded:     Loaded_Entry,       // the reader's last answer for the selected entry (the reader's heap)
 	drag:       Drag_Out,           // an entry dragged out of the list (drag.odin)
 	thumbs:     Thumbs,             // the list's thumbnails (thumbs.odin)
+	views:      ui.Views,           // the dialogs, wherever the user puts them, and how each was last shown (views.txt)
 	palette:    ui.Command_Palette, // Ctrl+K: every action (actions.odin)
 	palette_table: Palette_Table,   // what it lists
 	sheet:      ui.Shortcuts_Sheet, // F1: the sheet of the keys
@@ -107,7 +108,7 @@ App :: struct {
 	settings_open: bool,            // the settings in place of the history (settings_view.odin)
 	settings_page: prefs_page.Page,
 	sel_rect:   ui.Rect,            // the selected row, as last built (where the Menu key opens the menu)
-	room:       f32,                // the window's width at this build, logical pixels
+	room:       f32,                // the page's width at this build (the window's, but what views docked at a side take), logical pixels
 	install:    prefs_page.Install, // the install: its offer, its dialog, the settings' page (setup_view.odin)
 	setup_known: bool,              // the start's reading of the install came (setup_follow)
 	logo:       render.Texture,     // the install dialog's logo (made at its first show)
@@ -167,6 +168,11 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	}
 	h := &app.main
 	win := h.win
+	// (the views' memory read here, before the loop, as the window's state is; written on its own thread from now on)
+	ui.views_init(&app.views, {path = views_path()})
+	ui.set_views(&h.state, &app.views)
+	ui.views_set_windows(&app.views, host.view_windows(h))
+	qr_register(app)
 	// (a message said between two builds, a task's result, shows in this window's state)
 	app.announcer = {mode = app.settings.messages, window = win, state = &h.state}
 	app.icons, _ = font.load_embedded(&app.shared.fonts, lucide.DATA)
@@ -247,6 +253,8 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	ui.chores_stop()
 	prefs_page.install_end(&app.install)   // (its thread waited for, before the window's State goes)
 	crash_bar.destroy(&app.crash_bar)
+	// (after the last build, while the window's State is there: which views were open is written, their windows close)
+	ui.views_destroy(&app.views)
 	host.host_close(h)
 	// (the instance is let go (watcher_stop): the installed copy the install's dialog opened is the running papier now)
 	prefs_page.install_launch(&app.install)

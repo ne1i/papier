@@ -106,6 +106,14 @@ A setting chosen opens the settings on it alone, its page underneath. Type to ke
 Enter runs the first. An action that cannot act now is grey. The palette's keys, the menus' and the tooltips' come from
 one table (`src/actions.odin`).
 
+## Where a dialog goes
+
+The sheet of the keys, a QR code and the setup open as dialogs over the window. Each can go elsewhere: the icon beside
+its close cross, or a drag of its header, makes it a window that floats inside papier's; a right click on its header
+puts it in a window of the system of its own, or docks it to the left, the right or the bottom of the window. The
+palette lists the same moves for each dialog that is open. Papier remembers where each one was, and opens it there next
+time.
+
 ## A QR code
 
 ![An entry as a QR code](screenshots/qr.png)
@@ -208,6 +216,7 @@ papier get "$(papier list 100 | awk -F'\t' '$2 ~ /^image/ { print $1; exit }')" 
 | The history, with `history.persist` off | `$XDG_RUNTIME_DIR/papier`: gone at the end of the session |
 | The preferences | `$XDG_CONFIG_HOME/papier/prefs` (`~/.config/papier/prefs`) |
 | The window's size and place | `$XDG_STATE_HOME/papier/window` (`~/.local/state/papier/window`) |
+| Where each dialog is shown, and its size | `$XDG_STATE_HOME/papier/views.txt` |
 
 `history.db` is a SQLite database: `sqlite3 ~/.local/share/papier/history.db` reads it. The bytes of each type of each
 copy are stored once, by their hash. The search reads the whole text of each copy.

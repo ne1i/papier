@@ -47,20 +47,22 @@ setup_follow :: proc(app: ^App) {
 	app_updates_auto(app)
 }
 
-// The install's dialog, the window shown (--setup, Settings > Apps' Uninstall).
+// The install's view, the window shown (--setup, Settings > Apps' Uninstall), with its logo.
 setup_open :: proc(app: ^App) {
+	if !app.logo_made { setup_logo(app) }
 	prefs_page.install_open(&app.install)
 	app.main.settle = max(app.main.settle, FRAMES_AT_SHOW)
 }
 
-// The install's machinery each frame (its dialog while open); its logo made at its first show.
-setup_build :: proc(app: ^App, em: f32) {
+// The install's machinery each frame (the work that ended, its view's answer). The start's offer opens the view from a
+// task's answer, before a logo was made: it is made then, and the view draws it from its next build.
+setup_build :: proc(app: ^App) {
 	if prefs_page.install_open_now(&app.install) && !app.logo_made { setup_logo(app) }
 	setup_follow(app)
-	if prefs_page.install_frame(&app.install, em) == .Launched { app.quit = true }   // (the installed copy starts at the end: app_run)
+	if prefs_page.install_frame(&app.install) == .Launched { app.quit = true }   // (the installed copy starts at the end: app_run)
 }
 
-// The logo of the dialog, a texture of the window's renderer (made once, freed with the window).
+// The logo of the view, a texture of the window's renderer (made once, freed with the window).
 @(private = "file")
 setup_logo :: proc(app: ^App) {
 	app.logo_made = true
@@ -69,6 +71,8 @@ setup_logo :: proc(app: ^App) {
 	app.logo = render.create_texture_rgba(&app.shared.r, img.size.x, img.size.y)
 	render.update_texture_rgba(&app.shared.r, app.logo, 0, 0, img.size.x, img.size.y, img.rgba)
 	app.install.logo = setup.Logo{app.logo, {f32(LOGO_SIZE), f32(LOGO_SIZE)}}
+	// (a view already open draws with what setup.open got)
+	if app.install.dialog.open { app.install.dialog.logo = app.install.logo }
 }
 
 LOGO_SIZE :: 128

@@ -208,7 +208,7 @@ remove_entry :: proc(app: ^App, id: u64) {
 // The keys of the window, taken before the search field sees them.
 @(private = "file")
 view_keys :: proc(app: ^App) {
-	if prefs_page.install_open_now(&app.install) || app.palette.open || app.sheet.open || app.qr.open { return }   // (a dialog has the keyboard)
+	if ui.views_hold_keys(&app.views) { return }   // (a dialog has the keyboard)
 	if app.settings_open { settings_keys(app); return }
 	if app.edit.active { edit_keys(app); return }
 	// (the moves of the selection: a move clears the marks, as the list's own keys do)
@@ -247,17 +247,30 @@ view_build :: proc(h: ^host.Host, size: host.Vec2) {
 	app_shortcut_follow(app)
 	// (the user's themes file: a task looks at it now and then, and reads it when it changed; app_params shows it)
 	if prefs_page.themes_file_poll(&app.themes_file, &app.main.state) { app.main.settle = max(app.main.settle, FRAMES_AFTER_INPUT) }
-	// the keyboard is the search's, unless the edit view or the settings have it
-	dialog := app.palette.open || app.sheet.open || app.qr.open || prefs_page.install_open_now(&app.install)
-	if !app.edit.active && !app.settings_open && !dialog && app.search_key != 0 && ui.focus_key() != app.search_key { ui.set_focus(app.search_key) }
-	view_keys(app)
-	ui.next({width = ui.fill(), height = ui.fill(), axis = .Y})
-	page := ui.build_box({.Draw_Background}, "###page")
-	if ui.parent(page) { build_page(app, em) }
-	entry_menu_build(app, em)
-	actions_build(app)
-	qr_build(app, em)
-	setup_build(app, em)
+	// (the dialogs, the floating views, the docked ones: around the page, and over it)
+	if ui.views_frame(&app.views) {
+		// (a view docked at a side narrows the page: its room is the content's, as the last layout made it)
+		if content := ui.parent_box(); content.rect.max.x > content.rect.min.x {
+			app.room = (content.rect.max.x - content.rect.min.x) / max(ui.scale(), 0.01)
+		}
+		// the keyboard is the search's, unless the edit view, the settings or a view have it (a floating or docked view
+		// keeps the focus it was given)
+		if !app.edit.active && !app.settings_open && !views_open(app) && app.search_key != 0 && ui.focus_key() != app.search_key { ui.set_focus(app.search_key) }
+		view_keys(app)
+		ui.next({width = ui.fill(), height = ui.fill(), axis = .Y})
+		page := ui.build_box({.Draw_Background}, "###page")
+		if ui.parent(page) { build_page(app, em) }
+		entry_menu_build(app, em)
+		actions_build(app)
+		setup_build(app)
+	}
+}
+
+// Whether one of papier's views is open, in whatever presentation.
+@(private = "file")
+views_open :: proc(app: ^App) -> bool {
+	return ui.palette_is_open(&app.palette) || ui.shortcuts_sheet_is_open(&app.sheet) || ui.view_is_open(&app.views, QR_VIEW) ||
+		prefs_page.install_open_now(&app.install)
 }
 
 @(private = "file")
