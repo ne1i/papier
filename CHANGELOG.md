@@ -3,6 +3,22 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.22.0] - 2026-11-14
+
+### Added
+- **Select several items with Ctrl and Shift, from the keyboard too**: Shift+Up and Shift+Down select a range from the entry chosen last, Ctrl+Shift+Home and Ctrl+Shift+End to the first or the last, Ctrl+Shift with the arrows adds a range to what is selected; Ctrl+Up and Ctrl+Down move the cursor alone and Ctrl+Space adds or takes out its entry. A second Shift+click nearer the first entry makes the range smaller, and Ctrl+Shift+click adds a range. Copy, Pin and Remove act on every entry selected (Copy joins their texts as one, in the list's order); the preview, Edit, Open, Save as and the QR code follow the cursor. Escape on several entries keeps the cursor's alone, then clears the search, then hides.
+- **Every dialog can be put elsewhere**: the sheet of the keys, a QR code and the setup can float inside the window (the icon beside the close cross, or a drag of the header), open in a window of the system of their own, or dock to the left, the right or the bottom of the window (a right click on the header). The command palette lists these moves for each dialog that is open. Papier remembers where each dialog was and its size, and opens it there next time.
+
+### Fixed
+- **Every text the preview shows can be selected and copied.** A drag selects across lines in a text, code, Markdown or diff entry, Ctrl+C copies it, and a drag near the edge scrolls. The entry's details (its kind, size, types and age), the editor's counts, the status line, the QR code's words and why a diagram could not be drawn select the same way.
+- **The palette, the keys, quit and Ctrl+, work in every page.** In the settings and in the edit view, Ctrl+K, Ctrl+Shift+P, F1 and Ctrl+Q did nothing, and over the QR code or the sheet of the keys none of papier's keys worked. They now work there too, while a field has the keyboard as well. The shortcut recorder of the settings still records any combination.
+- **On Windows, an entry opened as a file has a path with backslashes only**: the program that opened it received `C:\Users\you\AppData\Local\Temp/papier-open/…`; it now receives `C:\Users\you\AppData\Local\Temp\papier-open\…`.
+- **A long entry scrolls in the preview.** The text of a long entry, rendered Markdown, plain text or code, was cut at the bottom of the pane: the wheel and the scroll bar did nothing. They scroll it now, and Shift+Page Up and Shift+Page Down move it by a page.
+- **The shortcut brings back a window left behind another.** When papier was shown and the person clicked another window, the next press of the shortcut hid papier. It now comes to the front with the keyboard; the shortcut hides it only when it is the window in use. A click on the tray icon still shows or hides it.
+- **`papier set` no longer stops papier.** Changing a setting from the command line while papier ran made it stop at the next frame: the settings read again from the file lacked the install's answer.
+- **The update is shown once**: the status bar's button alone says that a new version is downloading or is ready to restart; the status line no longer repeats it beside the button, and its own text is no longer cut. A failed update is said there.
+- **The font settings apply at once.** The interface, monospace and reading fonts took effect only at the next start; a family chosen in the settings now shows at once, in every window, and Default brings papier's own back. The reading font is now the text of a Markdown entry.
+
 ## [0.21.2] - 2026-11-14
 
 ### Fixed
@@ -419,6 +435,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.22.0]: https://github.com/sachahjkl/papier/releases/tag/v0.22.0
 [0.21.2]: https://github.com/sachahjkl/papier/releases/tag/v0.21.2
 [0.21.1]: https://github.com/sachahjkl/papier/releases/tag/v0.21.1
 [0.21.0]: https://github.com/sachahjkl/papier/releases/tag/v0.21.0
