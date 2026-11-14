@@ -467,7 +467,11 @@ build_status :: proc(app: ^App, em: f32) {
 		ui.spacer(ui.px(em * 0.7))
 		// (an update on offer, coming or in place: a button to act on it, where the eye goes)
 		ui.next({height = ui.px(ui.dense(em * (STATUS_EM - 0.45)))})
-		if prefs_page.update_badge(app.updater, proc(user: rawptr) { app_restart((^App)(user), hidden = false) }, app) { ui.spacer(ui.px(em * 0.6)) }
+		badge_w: f32
+		if b := prefs_page.update_badge(app.updater, proc(user: rawptr) { app_restart((^App)(user), hidden = false) }, app); b != nil {
+			badge_w = b.rect.max.x - b.rect.min.x + em * 0.6
+			ui.spacer(ui.px(em * 0.6))
+		}
 		if ui.style({font_size = em * 0.88}) {
 			if ui.tags("weak") {
 				ui.next({width = ui.fill()})
@@ -483,11 +487,12 @@ build_status :: proc(app: ^App, em: f32) {
 				}
 				ui.label(fmt.tprintf("%s###status", msg))
 				// (the hints, most useful first, as many as the room beside the status leaves: a narrow window or a
-				// language with longer words drops the last ones instead of running off the window)
+				// language with longer words drops the last ones instead of running off the window; the update's
+				// badge takes its room first, so the status is never cut)
 				hints := app.edit.active ? EDIT_HINTS[:] : LIST_HINTS[:]
 				font_now := ui.top_style().font
 				size_now := ui.font_size()
-				room := app.room * ui.scale() - em * 1.0 - ui.text_width(font_now, size_now, msg) - em * 1.5
+				room := app.room * ui.scale() - em * 1.0 - badge_w - ui.text_width(font_now, size_now, msg) - em * 1.5
 				for hint, i in hints {
 					key := ui.chord_text(hint.key)
 					label := i18n.tr(hint.label)

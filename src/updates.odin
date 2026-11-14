@@ -40,9 +40,9 @@ app_updates_follow :: proc(app: ^App) {
 	st := update.status(app.updater)
 	if st.serial != app.update_serial {
 		app.update_serial = st.serial
-		app.main.settle = max(app.main.settle, FRAMES_AFTER_INPUT)   // (the settings show the state)
-		// (said when asked, or when there is something to know: not each check that found nothing)
-		if app.visible && (st.asked || st.phase == .Installed || st.phase == .Available) { say(app, "%s", update.status_words(st)) }
+		app.main.settle = max(app.main.settle, FRAMES_AFTER_INPUT)   // (the badge and the settings show the state)
+		// (the status bar's badge shows the phase: the status line says only what it cannot, once)
+		if words, _ := update.notice(st); words != "" && app.visible { say(app, "%s", words) }
 		// (the installed copy: its manifest and Settings > Apps say the new version)
 		if st.phase == .Installed { reader_job(&app.reader, {kind = .Setup_Updated, text = st.version}) }
 	}
