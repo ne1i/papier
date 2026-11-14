@@ -594,6 +594,9 @@ app_job_done :: proc(app: ^App, d: ^Job_Done) {
 			prefs_page.standard_unwatch(&app.standard)
 			config.prefs_destroy(&app.prefs)
 			app.prefs, d.prefs, d.ok = d.prefs, {}, false
+			// (the new registry holds papier's own definitions only: the toolkit's install.choice is declared again, as
+			// at the start, and takes the value the file gave it)
+			prefs_page.install_init(&app.install, &app.prefs, setup_options())
 			prefs_page.standard_watch(&app.standard, &app.prefs, &app.main.state, app_standard_targets(app))
 			// (the file holds what was just read: the writer has nothing to write until the next change)
 			app.prefs_writer.version = app.prefs.user_version
