@@ -20,6 +20,7 @@ package papier
 
 import "base:runtime"
 import "core:fmt"
+import "core:path/filepath"
 import "core:strings"
 import "core:sync"
 import "core:unicode/utf8"
@@ -711,7 +712,7 @@ entry_file :: proc(r: ^Reader, e: ^history.Entry) -> (path: string, ok: bool) {
 	if data == nil { return }
 	dir := open_dir()
 	fsx.make_dirs(dir)
-	path = fmt.tprintf("%s/%s", dir, entry_file_name(e))
+	path, _ = filepath.join({dir, entry_file_name(e)}, context.temp_allocator)
 	return path, fsx.write_atomic(path, data)
 }
 

@@ -78,7 +78,7 @@ edit_build :: proc(app: ^App, e: ^history.Entry, em: f32) {
 		ui.next({width = ui.text_size(em * 0.3), height = ui.pct(1)})
 		ui.label(fmt.tprintf("%s###editing", i18n.tr("Editing")))
 		if ui.tags("weak") {
-			ui.next({width = ui.fill(), height = ui.pct(1)})
+			ui.next({width = ui.fill(), height = ui.pct(1), flags = {.Selectable}})   // (content: its counts)
 			if ui.style({font_size = em * 0.88}) {
 				text := ui.text_edit_string(&app.edit.area)
 				chars, lines := utf8.rune_count_in_string(text), ui.text_edit_line_count(&app.edit.area)
@@ -98,7 +98,7 @@ edit_build :: proc(app: ^App, e: ^history.Entry, em: f32) {
 	ui.next({width = ui.fill(), height = ui.fill()})
 	if ui.row() {
 		ui.spacer(ui.px(em * 0.5))
-		ui.next({width = ui.fill(), height = ui.fill(), font = app.mono, font_size = em * 0.95})
+		ui.next({width = ui.fill(), height = ui.fill(), font = ui.mono_font(), font_size = em * 0.95})
 		// (code keeps its language's colours while it is edited; Markdown, a diff and prose are not code: plain)
 		hl: ^ui.Text_Highlight
 		if loaded_for(app, e) && app.loaded.form == .Code && app.loaded.has_code { hl = ui.code_highlight(app.loaded.code) }

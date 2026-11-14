@@ -10,6 +10,7 @@ package papiertool
 //
 // Needs sway and wl-clipboard on the PATH (nix develop has them).
 
+import "core:encoding/json"
 import "core:fmt"
 import "core:os"
 import "core:strings"
@@ -66,6 +67,8 @@ run_live :: proc(args: []string) -> int {
 	check(&l, true, "papier --hidden runs and answers")
 	live_clipboard(&l)
 	live_window(&l)
+	live_preview(&l)
+	live_toggle(&l)
 	code := session_stop(&l.session)
 	check(&l, code == 0, "papier quit: it ends, with 0 (%d)", code)
 	log, _ := os.read_entire_file(fmt.tprintf("%s/papier.log", dir), context.temp_allocator)
@@ -194,6 +197,11 @@ live_window :: proc(l: ^Live) {
 	check(l, cdp.key(&c, "ctrl+e"), "Ctrl+E")
 	check(l, cdp.wait_for(&c, "Editing", SESSION_WAIT), "the edit view opens")
 	check(l, cdp.type_text(&c, ", edited"), "type in the editor")
+	// (the palette is the window's: it opens while the editor has the keyboard)
+	check(l, cdp.key(&c, "ctrl+k"), "Ctrl+K in the edit view")
+	check(l, cdp.wait_for(&c, "Clear the history (pinned entries stay)", SESSION_WAIT), "the palette opens over the edit view")
+	check(l, cdp.key(&c, "Escape"), "Escape closes the palette")
+	check(l, cdp.wait_for(&c, "Clear the history (pinned entries stay)", SESSION_WAIT, gone = true), "the palette is closed")
 	check(l, cdp.key(&c, "ctrl+s"), "Ctrl+S")
 	check(l, cdp.wait_for(&c, EDITED, SESSION_WAIT), "the entry is saved, edited")
 	list, _ := run_in(l, PROGRAM, "list", "100")
@@ -205,6 +213,13 @@ live_window :: proc(l: ^Live) {
 	_ = os.remove_all(cfg)
 	check(l, cdp.key(&c, "ctrl+,"), "Ctrl+,")
 	check(l, cdp.wait_for(&c, "Appearance", SESSION_WAIT), "the settings open")
+	// (the palette from the settings, their search with the keyboard; it lists the settings, "Settings · <page>")
+	check(l, cdp.key(&c, "ctrl+k"), "Ctrl+K in the settings")
+	check(l, cdp.wait_for(&c, "Clear the history (pinned entries stay)", SESSION_WAIT), "the palette opens over the settings")
+	check(l, cdp.type_text(&c, "theme"), "search the settings in the palette")
+	check(l, cdp.wait_for(&c, "Settings · Appearance", SESSION_WAIT), "the palette lists the settings")
+	check(l, cdp.key(&c, "Escape"), "Escape closes the palette")
+	check(l, cdp.wait_for(&c, "Settings · Appearance", SESSION_WAIT, gone = true), "the palette is closed")
 	check(l, cdp.click_text(&c, "Appearance"), "click the Appearance page")
 	check(l, cdp.wait_for(&c, "Graphite", SESSION_WAIT), "the settings show the themes")
 	check(l, cdp.click_text(&c, "Graphite"), "click Graphite's card")
@@ -253,5 +268,136 @@ live_window :: proc(l: ^Live) {
 		asked := time.tick_now()
 		check(l, cdp.wait_for(&rc, "hello from papier live", SESSION_WAIT), "round %d: a frame of the window again (%.0f ms)", round, time.duration_milliseconds(time.tick_since(asked)))
 		cdp.close(&rc)
+	}
+}
+
+// A long Markdown entry selected: its preview is taller than the pane, and the wheel over it, then Shift+Page Down,
+// move it (its heading goes up). Ends with the search empty.
+@(private = "file")
+live_preview :: proc(l: ^Live) {
+	TOP :: "Long preview top"
+	b := strings.builder_make(context.temp_allocator)
+	// (a heading and a list: syntax.guess takes a text for Markdown on two of its signs, never one)
+	strings.write_string(&b, "# " + TOP + "\n\n- an item of the list\n- another item\n\n")
+	for i in 1 ..= 80 { fmt.sbprintf(&b, "Paragraph %d of the long preview, a line of text to make it tall.\n\n", i) }
+	check(l, copy_and_wait(l, strings.to_string(b), seen = TOP), "a long Markdown text is in the history")
+	_, code := run_in(l, PROGRAM, "show")
+	check(l, code == 0, "papier show")
+	c, ok := window_connect(l)
+	check(l, ok, "the window serves the DevTools protocol")
+	if !ok { return }
+	defer cdp.close(&c)
+	check(l, cdp.type_text(&c, "long preview"), "search the long entry")
+	check(l, cdp.wait_for(&c, "hello from papier live", SESSION_WAIT, gone = true), "it alone is listed")
+	width, _, _ := cdp.window_size(&c)
+	// (the list takes LIST_SHARE, 0.48, of the width: the preview's text starts just past it, so half the window would
+	// miss it; the list's own text starts near its left edge)
+	left := width * 0.3
+	at, shown := wait_preview(&c, TOP, left)
+	check(l, shown, "its heading is in the preview, rendered")
+	if !shown { return }
+	_, wheeled := cdp.call(&c, "Input.dispatchMouseEvent", fmt.tprintf(`{{"type":"mouseWheel","x":%v,"y":%v,"deltaX":0,"deltaY":100}}`, at.x + at.w * 0.5, at.y + at.h + 120))
+	check(l, wheeled, "a notch of the wheel over the preview")
+	check(l, wait_preview_up(&c, TOP, left, at.y), "the preview scrolls: its heading goes up")
+	now, _ := preview_of(&c, TOP, left)
+	check(l, cdp.key(&c, "shift+PageDown"), "Shift+Page Down")
+	check(l, wait_preview_up(&c, TOP, left, now.y), "the preview moves on by a page")
+	check(l, cdp.key(&c, "Escape"), "Escape clears the search")
+	check(l, cdp.wait_for(&c, "hello from papier live", SESSION_WAIT), "the history is listed again")
+}
+
+// The box of `text` in the preview: one that shows it and starts past `left` (the list may show it too).
+@(private = "file")
+preview_of :: proc(c: ^cdp.Client, text: string, left: f64) -> (at: cdp.Box, found: bool) {
+	for b in cdp.find(c, text) { if b.x >= left { return b, true } }
+	return
+}
+
+// Until the preview shows `text`, at most SESSION_WAIT.
+@(private = "file")
+wait_preview :: proc(c: ^cdp.Client, text: string, left: f64) -> (at: cdp.Box, ok: bool) {
+	deadline := time.tick_add(time.tick_now(), SESSION_WAIT)
+	for time.tick_diff(time.tick_now(), deadline) > 0 {
+		if at, ok = preview_of(c, text, left); ok { return }
+		time.sleep(SESSION_POLL)
+	}
+	return
+}
+
+// Until the preview's box of `text` is above `from`, or gone from the preview (scrolled out past its top), at most
+// SESSION_WAIT.
+@(private = "file")
+wait_preview_up :: proc(c: ^cdp.Client, text: string, left, from: f64) -> bool {
+	deadline := time.tick_add(time.tick_now(), SESSION_WAIT)
+	for time.tick_diff(time.tick_now(), deadline) > 0 {
+		at, found := preview_of(c, text, left)
+		if !found || at.y < from - 0.5 {
+			// (the scroll's glide ends first: the next move starts from where it stops)
+			_, _ = cdp.wait_idle(c, SESSION_WAIT)
+			return true
+		}
+		time.sleep(SESSION_POLL)
+	}
+	return false
+}
+
+// The shortcut while the window is shown but the person went to another place: the window comes to the front with the
+// keyboard (it hid before); once in front, the shortcut hides it. `papier toggle` starts as a compositor's binding starts
+// it (swaymsg exec), with a launch's activation token, which papier hands to the running one.
+@(private = "file")
+live_toggle :: proc(l: ^Live) {
+	_, code := run_in(l, PROGRAM, "show")
+	check(l, code == 0, "papier show")
+	check(l, wait_papier_window(l, mapped = true, focused = true), "the window is shown, with the keyboard")
+	_, wcode := run_in(l, "swaymsg", "workspace", "elsewhere")
+	check(l, wcode == 0 && wait_papier_window(l, mapped = true, focused = false), "another workspace takes the keyboard, the window stays")
+	check(l, sway_toggle(l), "the shortcut (papier toggle, started by sway)")
+	check(l, wait_papier_window(l, mapped = true, focused = true), "the window comes to the front with the keyboard, not hidden")
+	check(l, sway_toggle(l), "the shortcut again")
+	check(l, wait_papier_window(l, mapped = false, focused = false), "the window had the keyboard: it hides")
+}
+
+// `papier toggle` started by sway, which gives it an activation token. Its homes are the session's, not the person's.
+@(private = "file")
+sway_toggle :: proc(l: ^Live) -> bool {
+	cwd, _ := os.get_working_directory(context.temp_allocator)
+	command := fmt.tprintf("exec env XDG_CONFIG_HOME=%s/config XDG_DATA_HOME=%s/data XDG_STATE_HOME=%s/state %s/%s toggle", l.dir, l.dir, l.dir, cwd, PROGRAM)
+	_, code := run_in(l, "swaymsg", command)
+	return code == 0
+}
+
+// Until sway's tree has papier's window (`mapped`) with the keyboard or not (`focused`), at most SESSION_WAIT.
+@(private = "file")
+wait_papier_window :: proc(l: ^Live, mapped, focused: bool) -> bool {
+	deadline := time.tick_add(time.tick_now(), SESSION_WAIT)
+	for time.tick_diff(time.tick_now(), deadline) > 0 {
+		m, f := papier_window(l)
+		if m == mapped && (!mapped || f == focused) { return true }
+		time.sleep(SESSION_POLL)
+	}
+	return false
+}
+
+// Whether sway's tree has papier's window (on any workspace), and whether it has the keyboard.
+@(private = "file")
+papier_window :: proc(l: ^Live) -> (mapped, focused: bool) {
+	out, code := run_in(l, "swaymsg", "-r", "-t", "get_tree")
+	if code != 0 { return }
+	tree, err := json.parse_string(out, allocator = context.temp_allocator)
+	if err != nil { return }
+	sway_walk(tree, &mapped, &focused)
+	return
+}
+
+@(private = "file")
+sway_walk :: proc(v: json.Value, mapped, focused: ^bool) {
+	node, ok := v.(json.Object)
+	if !ok { return }
+	if id, is := node["app_id"].(json.String); is && id == "papier" {
+		mapped^ = true
+		if f, fb := node["focused"].(json.Boolean); fb && f { focused^ = true }
+	}
+	for key in ([]string{"nodes", "floating_nodes"}) {
+		if kids, is := node[key].(json.Array); is { for kid in kids { sway_walk(kid, mapped, focused) } }
 	}
 }

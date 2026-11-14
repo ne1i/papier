@@ -26,6 +26,28 @@ date. These rules keep what the window shows consistent.
 - An edit asked meanwhile begins when they come: the edit view needs the whole text, not the preview.
 - An image is decoded by the decoder; the newest selection wins, and the window makes one texture when the decoder wakes
   it. The decoder reads the picture for a QR code too, and gives its text with the picture.
+- A text, Markdown or code scrolls in a `scroll_y` box. What it holds is sized by its children (`children_sum`): papier's
+  base style gives a box a control's height, and content cut to it never overflows the box, which then does not scroll.
+- The keyboard stays in the search, so Page Up / Page Down move in the list and Shift with them scrolls the preview. A
+  focusable preview was refused: a click on it would take the keyboard from the search, where typing must go.
+
+## Several entries
+
+The list's selection is the toolkit's `Item_Selection` (gui_toolkit's `src/md/features/selection.md`): clicks with
+Ctrl, Shift and Ctrl+Shift, and the keys the search leaves to the list (`move_keys` in `view.odin`). Each key gives the
+row it goes to; `item_selection_move` gives its modifiers their meaning.
+
+- **The preview is the cursor's entry**, and so are Edit, Open, Save as, the QR code and the text of an image: they show
+  or change one entry. Ctrl and the arrows move the cursor alone, so the preview can show an entry of the selection, or
+  one outside it, without changing it.
+- **Copy, Pin and Remove act on the selection.** Copy of several joins their texts in the list's order, a line between
+  two, as a new entry put on the clipboard (the reader's `Join`). A copy of the first entry alone, or a choice of one,
+  was refused: Copy on several selected would then drop what the person chose. Pin pins them all when one is not pinned.
+- **Shift+Page Up and Down stay the preview's pages**, so Shift extends with the arrows and with Ctrl+Shift+Home and
+  End only (Ctrl+Home is the list's Home: the search keeps Home).
+- **Escape takes several entries back to the cursor's**, then clears the search, then hides: the toolkit's rule
+  (`item_selection_escape`), read by papier because the search has the keyboard.
+- After Copy of several or Remove, the cursor's row is selected alone: the next Enter copies what the cursor shows.
 
 ## Thumbnails
 

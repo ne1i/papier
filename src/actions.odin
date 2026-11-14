@@ -5,8 +5,9 @@ package papier
 // keys (F1). The moves of the selection (the arrows, Page Up/Down, Ctrl+Home/End, Alt+1…9) and Escape stay in view_keys:
 // they are the list's, not commands.
 //
-// An action on entries acts on the marked rows (a Ctrl or Shift click, Ctrl+Shift+A), or on the selected one when none is
-// marked.
+// An action on entries acts on the rows selected (the toolkit's selection: Ctrl, Shift and Ctrl+Shift clicks, Shift and
+// the moves, Ctrl+Space, Ctrl+Shift+A), or on the cursor's row when none is. What shows one entry (the preview, Edit,
+// Open, Save as, the QR code) is the cursor's.
 
 import "base:runtime"
 import "core:mem/virtual"
@@ -20,7 +21,7 @@ import "history"
 
 Action :: enum u8 {
 	Copy, Copy_Plain, Edit, Open, Save_As, Pin, Remove, Show_QR, Copy_Qr_Content, Copy_Image_Text, Toggle_Markdown_Source,
-	Mark_All, Clear_Marks,
+	Select_All, Select_One,
 	Filter_All, Filter_Text, Filter_Images, Filter_Files, Filter_Pinned, Filter_Next, Filter_Previous,
 	Clear_History, Settings, Check_Updates, Palette, Shortcuts, Hide, Restart, Quit,
 }
@@ -37,8 +38,8 @@ ACTIONS := [Action]ui.Command{
 	.Copy_Qr_Content = {label = i18n.later("Copy the QR code's content"), group = i18n.later("Entry"), icon = lucide.QR_CODE, tags = {"scan", "read", "link"}},
 	.Toggle_Markdown_Source = {label = i18n.later("Show the Markdown source or rendered"), group = i18n.later("Entry"), keys = {{.M, {.Ctrl, .Shift}}}, icon = lucide.FILE_CODE, tags = {"markdown", "source", "raw", "render"}},
 	.Copy_Image_Text = {label = i18n.later("Copy the text of the image"), group = i18n.later("Entry"), keys = {{.T, {.Ctrl, .Shift}}}, icon = lucide.FILE_TEXT, tags = {"ocr", "recognize", "read", "screenshot", "scan"}},
-	.Mark_All        = {label = i18n.later("Mark every entry shown"), group = i18n.later("Selection"), keys = {{.A, {.Ctrl, .Shift}}}, icon = lucide.LIST_CHECKS, tags = {"select all", "selection"}},
-	.Clear_Marks     = {label = i18n.later("Clear the marks"), group = i18n.later("Selection"), icon = lucide.X},
+	.Select_All      = {label = i18n.later("Select every entry shown"), group = i18n.later("Selection"), keys = {{.A, {.Ctrl, .Shift}}}, icon = lucide.LIST_CHECKS, tags = {"select all", "selection", "mark"}},
+	.Select_One      = {label = i18n.later("Keep the cursor's entry alone selected"), group = i18n.later("Selection"), icon = lucide.X, tags = {"clear", "selection", "unmark"}},
 	.Filter_All      = {label = i18n.later("Show every entry"), group = i18n.later("Filter"), icon = lucide.LIST},
 	.Filter_Text     = {label = i18n.later("Show text"), group = i18n.later("Filter"), icon = lucide.ALIGN_LEFT},
 	.Filter_Images   = {label = i18n.later("Show images"), group = i18n.later("Filter"), icon = lucide.IMAGE},
@@ -47,48 +48,43 @@ ACTIONS := [Action]ui.Command{
 	.Filter_Next     = {label = i18n.later("Next filter"), group = i18n.later("Filter"), keys = {{.Tab, {}}}, icon = lucide.FILTER},
 	.Filter_Previous = {label = i18n.later("Previous filter"), group = i18n.later("Filter"), keys = {{.Tab, {.Shift}}}, icon = lucide.FILTER},
 	.Clear_History   = {label = i18n.later("Clear the history (pinned entries stay)"), group = i18n.later("papier"), icon = lucide.TRASH_2, tags = {"wipe", "erase", "empty"}},
-	.Settings        = {label = i18n.later("Settings"), group = i18n.later("papier"), keys = {{.Comma, {.Ctrl}}}, icon = lucide.SETTINGS, tags = {"preferences", "options", "configure"}},
+	.Settings        = {label = i18n.later("Settings"), group = i18n.later("papier"), keys = {{.Comma, {.Ctrl}}}, icon = lucide.SETTINGS, tags = {"preferences", "options", "configure"}, scope = .Window},
 	.Check_Updates   = {label = i18n.later("Check for updates"), group = i18n.later("papier"), icon = lucide.REFRESH_CW, tags = {"upgrade", "version", "new"}},
-	.Palette         = {label = i18n.later("Command palette"), group = i18n.later("papier"), keys = {{.K, {.Ctrl}}, {.P, {.Ctrl, .Shift}}}, icon = lucide.COMMAND},
-	.Shortcuts       = {label = i18n.later("Keyboard shortcuts"), group = i18n.later("papier"), keys = {{.F1, {}}}, icon = lucide.KEYBOARD, tags = {"help", "keys", "hotkeys"}},
-	.Hide            = {label = i18n.later("Hide the window"), group = i18n.later("papier"), icon = lucide.X, tags = {"close", "dismiss"}},
+	.Palette         = {label = i18n.later("Command palette"), group = i18n.later("papier"), keys = {{.K, {.Ctrl}}, {.P, {.Ctrl, .Shift}}}, icon = lucide.COMMAND, scope = .Window},
+	.Shortcuts       = {label = i18n.later("Keyboard shortcuts"), group = i18n.later("papier"), keys = {{.F1, {}}}, icon = lucide.KEYBOARD, tags = {"help", "keys", "hotkeys"}, scope = .Window},
+	.Hide            = {label = i18n.later("Hide the window"), group = i18n.later("papier"), icon = lucide.X, tags = {"close", "dismiss"}, scope = .Window},
 	.Restart         = {label = i18n.later("Restart papier"), group = i18n.later("papier"), icon = lucide.ROTATE_CCW, tags = {"reload", "relaunch"}},
-	.Quit            = {label = i18n.later("Quit papier"), group = i18n.later("papier"), keys = {{.Q, {.Ctrl}}}, icon = lucide.POWER, tags = {"exit", "close", "stop"}},
+	.Quit            = {label = i18n.later("Quit papier"), group = i18n.later("papier"), keys = {{.Q, {.Ctrl}}}, icon = lucide.POWER, tags = {"exit", "close", "stop"}, scope = .Window},
 }
 
-// The entries an action acts on: the marked ones in the list's order, else the selected one (temp memory). Run when an
-// action runs, not at each build: it goes over the marks.
+// The entries an action acts on: those selected in the list's order, else the cursor's (temp memory). Run when an
+// action runs, not at each build: it goes over the selection.
 acted_on :: proc(app: ^App) -> []^history.Entry {
 	out := make([dynamic]^history.Entry, context.temp_allocator)
-	if ui.list_mark_count(&app.vl) > 0 {
+	if len(app.vl.selected) > 0 {
 		at := make([dynamic]int, context.temp_allocator)
-		for id in app.vl.marks { if i, ok := app.list.at[id]; ok { append(&at, i) } }
+		for id in app.vl.selected { if i, ok := app.list.at[id]; ok { append(&at, i) } }
 		slice.sort(at[:])   // (the list's order is its entries' order)
 		for i in at { append(&out, &app.list.entries[i]) }
-	} else if e := selected(app); e != nil {
-		append(&out, e)
+	}
+	if len(out) == 0 {
+		if e := selected(app); e != nil { append(&out, e) }
 	}
 	return out[:]
 }
 
-// How many entries an action acts on, and the one when it is one: what action_enabled needs, at each build, without a
-// pass over the marks.
+// How many entries Copy, Pin and Remove act on: what action_enabled needs, at each build, without a pass over the
+// selection.
 @(private = "file")
-acted_count :: proc(app: ^App) -> (n: int, one: ^history.Entry) {
-	switch ui.list_mark_count(&app.vl) {
-	case 0:
-		one = selected(app)
-		return one != nil ? 1 : 0, one
-	case 1:
-		for id in app.vl.marks { one = list_entry(app, id) }
-		return one != nil ? 1 : 0, one
-	}
-	return ui.list_mark_count(&app.vl), nil
+acted_count :: proc(app: ^App) -> int {
+	if n := len(app.vl.selected); n > 0 { return n }
+	return selected(app) != nil ? 1 : 0
 }
 
-// Whether `a` can act now.
+// Whether `a` can act now. Copy, Pin and Remove act on the entries selected; the others on the cursor's entry (`one`),
+// the one the preview shows.
 action_enabled :: proc(app: ^App, a: Action) -> bool {
-	n, one := acted_count(app)
+	n, one := acted_count(app), selected(app)
 	switch a {
 	// (several: their texts joined by the reader; none of them a text says so then)
 	case .Copy:          return n >= 1
@@ -103,8 +99,8 @@ action_enabled :: proc(app: ^App, a: Action) -> bool {
 	case .Toggle_Markdown_Source: return one != nil && loaded_for(app, one) && app.loaded.form == .Markdown
 	// (one reading at a time: a second ask while one runs is not taken)
 	case .Copy_Image_Text: return one != nil && one.kind == .Image && image_rep(one) >= 0 && ocr_offered(app) && app.ocr_reading == 0
-	case .Mark_All:      return len(app.shown) > 0
-	case .Clear_Marks:   return ui.list_mark_count(&app.vl) > 0
+	case .Select_All:    return len(app.shown) > 0
+	case .Select_One:    return len(app.vl.selected) > 1
 	case .Filter_Pinned: return PINS
 	case .Clear_History: return len(app.list.entries) > 0
 	case .Filter_All, .Filter_Text, .Filter_Images, .Filter_Files, .Filter_Next, .Filter_Previous,
@@ -117,19 +113,21 @@ action_enabled :: proc(app: ^App, a: Action) -> bool {
 action_run :: proc(app: ^App, a: Action) {
 	if !action_enabled(app, a) { return }
 	on := acted_on(app)
+	cur := selected(app)   // (the cursor's: what the preview shows)
 	switch a {
 	case .Copy:
 		if len(on) == 1 { entry_copy(app, on[0].id); break }
 		if len(on) == 0 { break }
-		// (several: their texts as one new entry, a line between two; the reader reads them, app_job_done copies them)
+		// (several: their texts as one new entry, a line between two, in the list's order; the reader reads them,
+		// app_job_done copies them; the cursor's row then alone selected, as after any copy)
 		ids := make([]u64, len(on), context.temp_allocator)
 		for e, i in on { ids[i] = e.id }
 		reader_job(&app.reader, {kind = .Join, ids = ids})
-		ui.list_marks_clear(&app.vl)
-	case .Copy_Plain: entry_copy(app, on[0].id, plain = true)
-	case .Edit:       edit_begin(app, on[0])
-	case .Open:       entry_open(app, on[0])
-	case .Save_As:    entry_save_as(app, on[0])
+		select_row(app, app.vl.sel)
+	case .Copy_Plain: entry_copy(app, cur.id, plain = true)
+	case .Edit:       edit_begin(app, cur)
+	case .Open:       entry_open(app, cur)
+	case .Save_As:    entry_save_as(app, cur)
 	case .Pin:
 		// (one pin for all: pinned if one of them is not)
 		pin := false
@@ -139,18 +137,19 @@ action_run :: proc(app: ^App, a: Action) {
 		ids := make([]u64, len(on), context.temp_allocator)
 		for e, i in on { ids[i] = e.id }
 		for id in ids { remove_entry(app, id) }
-		ui.list_marks_clear(&app.vl)
+		// (the row that takes the cursor's place, alone selected)
+		select_row(app, app.vl.sel)
 		if len(ids) > 1 { announce(app, i18n.tr(len(ids), "Removed %d entry", "Removed %d entries"), len(ids)) }
-	case .Show_QR:       qr_open(app, on[0])
+	case .Show_QR:       qr_open(app, cur)
 	case .Toggle_Markdown_Source: app.markdown_source = !app.markdown_source
-	case .Copy_Qr_Content: copy_new_text(app, image_qr(app, on[0]), i18n.tr("Copied the QR code's content"), chosen = false)
+	case .Copy_Qr_Content: copy_new_text(app, image_qr(app, cur), i18n.tr("Copied the QR code's content"), chosen = false)
 	case .Copy_Image_Text:
-		e := on[0]
+		e := cur
 		at := image_rep(e)
 		slow_ocr(&app.slow, e.id, app.list.dir, e.reps[at].hash, e.reps[at].mime)
 		app.ocr_reading = e.id   // (app_ocr_follow ends it)
-	case .Mark_All:      ui.list_mark_all(&app.vl)
-	case .Clear_Marks:   ui.list_marks_clear(&app.vl)
+	case .Select_All:    ui.item_selection_all(&app.vl.selection, list_rows_now(app))
+	case .Select_One:    select_row(app, app.vl.sel)
 	case .Filter_All:    set_filter(app, .All)
 	case .Filter_Text:   set_filter(app, .Text)
 	case .Filter_Images: set_filter(app, .Images)
@@ -169,9 +168,18 @@ action_run :: proc(app: ^App, a: Action) {
 	}
 }
 
-// The keys of the actions, when nothing else has the keyboard.
+// The keys of the window's actions (scope .Window): in every page and mode, before anything else reads a key.
+window_keys :: proc(app: ^App) {
+	for a in Action {
+		if ACTIONS[a].scope != .Window { continue }
+		if ui.command_pressed(ACTIONS[a], !action_enabled(app, a)) { action_run(app, a); return }
+	}
+}
+
+// The keys of the history's actions, when nothing else has the keyboard (window_keys read the window's).
 actions_keys :: proc(app: ^App) {
 	for a in Action {
+		if ACTIONS[a].scope == .Window { continue }
 		if ui.command_pressed(ACTIONS[a], !action_enabled(app, a)) { action_run(app, a); return }
 	}
 }

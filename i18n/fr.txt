@@ -37,14 +37,14 @@ fr Afficher le Markdown en source ou en rendu
 en Copy the text of the image
 fr Copier le texte de l'image
 
-en Mark every entry shown
-fr Marquer tous les éléments affichés
+en Select every entry shown
+fr Sélectionner tous les éléments affichés
 
 en Selection
 fr Sélection
 
-en Clear the marks
-fr Retirer les marques
+en Keep the cursor's entry alone selected
+fr Ne garder sélectionné que l'élément du curseur
 
 en Show every entry
 fr Afficher tous les éléments

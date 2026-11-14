@@ -2,7 +2,7 @@ package papier
 
 // The menu of an entry: a right click on its row, or the Menu key / Shift+F10 on the selected one. What it does:
 //
-// Its items are the actions of actions.odin (their labels, keys and icons). With several entries marked, it offers what
+// Its items are the actions of actions.odin (their labels, keys and icons). With several entries selected, it offers what
 // acts on all of them: copy their texts as one, pin, remove.
 //
 //   Copy                 Enter         the entry back on the clipboard
@@ -22,6 +22,7 @@ package papier
 import "base:runtime"
 import "core:fmt"
 import "core:os"
+import "core:path/filepath"
 import "core:strings"
 import desktop "gt:desktop"
 import "gt:fsx"
@@ -72,13 +73,13 @@ entry_menu_build :: proc(app: ^App, em: f32) {
 		// (the menu is the selected entry's: it opens on it, and goes when the entry does)
 		e := selected(app)
 		if e == nil || e.id != m.id { ui.menu_close(); return }
-		// (several marked: what acts on all of them; else the entry's own items)
-		if n := ui.list_mark_count(&app.vl); n > 1 {
+		// (several selected: what acts on all of them; else the entry's own items)
+		if n := len(app.vl.selected); n > 1 {
 			item(app, .Copy, fmt.tprintf(i18n.tr(n, "Copy the %d text as one", "Copy the %d texts as one"), n))
 			ui.menu_separator()
 			if PINS { item(app, .Pin, fmt.tprintf(i18n.tr(n, "Pin or unpin the %d entry", "Pin or unpin the %d entries"), n)) }
 			item(app, .Remove, fmt.tprintf(i18n.tr(n, "Remove the %d entry", "Remove the %d entries"), n))
-			item(app, .Clear_Marks)
+			item(app, .Select_One)
 			return
 		}
 		item(app, .Copy)
@@ -187,9 +188,16 @@ entry_file_name :: proc(e: ^history.Entry) -> string {
 
 // Where the entries opened as files are written: the session's runtime directory (the user's alone, emptied at the
 // end of the session), else the system's temporary folder.
+// filepath.join: the program opened receives this path, so it has the system's separator only (on Windows the
+// temporary folder joined with "/" gave "C:\Users\x\AppData\Local\Temp/papier-open").
 open_dir :: proc() -> string {
-	if run := os.get_env("XDG_RUNTIME_DIR", context.temp_allocator); run != "" { return fmt.tprintf("%s/papier/open", run) }
-	return fmt.tprintf("%s/papier-open", fsx.temp_dir(context.temp_allocator))
+	dir: string
+	if run := os.get_env("XDG_RUNTIME_DIR", context.temp_allocator); run != "" {
+		dir, _ = filepath.join({run, "papier", "open"}, context.temp_allocator)
+	} else {
+		dir, _ = filepath.join({fsx.temp_dir(context.temp_allocator), "papier-open"}, context.temp_allocator)
+	}
+	return dir
 }
 
 // The usual extension of a MIME type ("bin" when it has none here).

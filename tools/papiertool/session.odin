@@ -16,7 +16,8 @@ import toolbox "gt:toolbox"
 SESSION_WAIT   :: 8 * time.Second
 SESSION_POLL   :: 50 * time.Millisecond
 // (papier floats at a size of its own, as a popup over the desktop would: the pictures have its real proportions)
-SWAY_CONFIG    :: "for_window [app_id=\"papier\"] floating enable, resize set 1100 680\n"
+// (a window asked to the front with a launch's token gets the keyboard: sway's default only marks it urgent)
+SWAY_CONFIG    :: "for_window [app_id=\"papier\"] floating enable, resize set 1100 680\nfocus_on_window_activation focus\n"
 
 Session :: struct {
 	sway:   toolbox.Sway,    // run/, config/, data/, state/, the logs

@@ -16,6 +16,22 @@ A second `papier` takes the instance name (`gt:instance`: a lock file and a Unix
 taken, sends its command (`show`, `toggle`, `copy 42`…) and ends. The compositor binds `papier toggle`; papier binds no
 global key of its own.
 
+## What the shortcut does
+
+`toggle` hides the window only when it is shown and has the keyboard (the platform window's `active`: its focus or
+activation events). A window shown behind another, because the person clicked elsewhere, comes to the front with the
+keyboard; a hidden one is shown. A toggle that looked at visibility alone hid the window the person was calling back.
+
+- Bringing a shown window to the front needs the compositor's consent on Wayland: the second start hands the launch's
+  activation token (`XDG_ACTIVATION_TOKEN`, else `DESKTOP_STARTUP_ID`) with its verb, and the running papier activates
+  its surface with it (`platform.raise_window_token`). A show of a hidden window uses the same token. On Windows the
+  second start allows the running one the foreground (`instance`: `AllowSetForegroundWindow`); papier's own hotkey is
+  its own input, so it may take the foreground.
+- A raise keeps what the window shows (the search, the selection): it is the same look, brought back. Only a show of a
+  hidden window starts a new look.
+- The tray's click toggles by visibility alone: the click takes the keyboard from the window first (the taskbar's), so
+  the focus rule would never hide it.
+
 ## The order of show and hide
 
 The window asks the watcher by one queue (copy, pin, delete, clear) and the watcher asks it by another (show, hide,

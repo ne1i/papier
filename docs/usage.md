@@ -29,6 +29,7 @@ full beside the list.
 | typing | filters the list: each word must be in the entry, case ignored |
 | Up, Down | the previous, the next entry |
 | Page Up, Page Down | ten entries up, down |
+| Shift+Page Up, Shift+Page Down | scrolls the selected entry's text, a page up, down (the wheel and the scroll bar scroll it too) |
 | Ctrl+Home, Ctrl+End | the first, the last entry |
 | Tab, Shift+Tab | the next, the previous filter: All, Text, Images, Files, Pinned |
 | Enter, a double click | puts the entry back on the clipboard, hides the window and pastes it into the program you called papier from |
@@ -41,13 +42,15 @@ full beside the list.
 | Ctrl+Shift+Q | shows the entry as a QR code, for a phone's camera |
 | Ctrl+Shift+T | an image: copies the text in it, as a new entry ([The text in an image](#the-text-in-an-image)) |
 | Ctrl+Shift+M | Markdown: shows its source, or shows it rendered again |
-| Ctrl+click, Shift+click | marks entries: Enter copies their texts as one, Ctrl+P pins them, Shift+Delete removes them |
-| Ctrl+Shift+A | marks every entry shown |
+| Ctrl+click, Shift+click, Ctrl+Shift+click | selects several entries: the entry added or taken out; the range from the last one clicked; the range added. Enter copies their texts as one, Ctrl+P pins them, Shift+Delete removes them |
+| Shift+Up, Shift+Down, Ctrl+Shift+Home, Ctrl+Shift+End | the range from the last entry chosen to the cursor (with Ctrl+Shift+Up and Down: added to what is selected) |
+| Ctrl+Up, Ctrl+Down, Ctrl+Space | moves the cursor alone; adds or takes out the entry under it. The preview shows the cursor's entry |
+| Ctrl+Shift+A | selects every entry shown |
 | Ctrl+K, Ctrl+Shift+P | the command palette: every action, searched as you type |
 | F1 | the sheet of the keys |
 | a right click, Menu, Shift+F10 | the entry's menu |
 | a drag of an entry | out of the window, into another program: its text, its picture, its files |
-| Escape | clears the marks, then the search; when both are empty, hides the window |
+| Escape | several entries selected: keeps the cursor's alone; then clears the search; then hides the window |
 
 An image fits the preview first: the wheel zooms around the pointer, a drag moves it, a double click shows its pixels
 and fits it again, and the bar in its corner zooms out, in, to its pixels or to what fits.
@@ -94,13 +97,15 @@ width of the list.
 | Pin, Unpin | pins or unpins the entry |
 | Remove | removes the entry |
 
-With several entries marked, the menu acts on all of them: copy their texts as one, pin or unpin them, remove them.
+With several entries selected, the menu acts on all of them: copy their texts as one (in the list's order, a line
+between two, as a new entry), pin or unpin them, remove them. Edit, Open, Save as and the QR code act on the cursor's
+entry, the one the preview shows.
 
 ## The command palette
 
 ![The command palette](screenshots/palette.png)
 
-Ctrl+K opens every action of papier in a dialog, under their groups: the entry's, the marks', the filters', papier's own
+Ctrl+K opens every action of papier in a dialog, under their groups: the entry's, the selection's, the filters', papier's own
 (the settings, the setup, a check for updates, the sheet of the keys, restart, quit), then every setting under its page.
 A setting chosen opens the settings on it alone, its page underneath. Type to keep the ones whose words begin as typed;
 Enter runs the first. An action that cannot act now is grey. The palette's keys, the menus' and the tooltips' come from

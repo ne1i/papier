@@ -31,7 +31,8 @@ One small native program, written in [Odin](https://odin-lang.org) on [gui_toolk
 - **Code in colours**: a copied script, query or snippet is shown in colours, its language found from the text.
 - **Thumbnails**: an image's row shows a small picture of it.
 - **A command palette** (Ctrl+K) with every action and every setting, and the sheet of the keys (F1).
-- **Several entries at once**: Ctrl or Shift click marks entries; copy their texts as one, pin them, remove them.
+- **Several entries at once**: select them with Ctrl and Shift, by clicks or keys; copy their texts as one, pin them,
+  remove them.
 - **Drag an entry out** into another program, or **show it as a QR code** for your phone.
 - **Secrets stay secret**: what a password manager marks (`x-kde-passwordManagerHint`) is never recorded.
 - **The clipboard kept**: when the program you copied from quits, the last entry goes back.
@@ -82,10 +83,11 @@ Sway, older Hyprland, KDE and NixOS: [docs/desktop.md](docs/desktop.md).
 | Tab, Shift+Tab | the next, the previous filter |
 | Ctrl+P | pin |
 | Shift+Delete | remove |
-| Ctrl+click, Shift+click | mark several entries |
+| Ctrl+click, Shift+click, Shift+Up, Shift+Down | select several entries |
+| Ctrl+Up, Ctrl+Down, Ctrl+Space | move the cursor alone; add or take out its entry |
 | Ctrl+K | the command palette |
 | F1 | every key |
-| Escape | clear the marks, the search, then hide |
+| Escape | the cursor's entry alone, then clear the search, then hide |
 
 ```sh
 papier list             # the newest entries

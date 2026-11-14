@@ -122,7 +122,8 @@ diagram_box :: proc(u: ^Markdown_User, d: ^Diagram, id: string) {
 	if ui.row(id = fmt.tprintf("%s_diagram_row", id)) {
 		ui.spacer(ui.fill())
 		dd := ui.frame_new(Diagram_Draw)
-		dd^ = {doc = doc, scale = scale, regular = app.shared.font, bold = ui.styled_face(app.shared.font, true, false)}
+		face := ui.text_face(.Interface)   // (the family the user chose, else papier's)
+		dd^ = {doc = doc, scale = scale, regular = face, bold = ui.styled_face(face, true, false)}
 		ui.a11y({role = .Image, name = i18n.tr("A diagram")})
 		ui.next({width = ui.px(math.ceil(sz.x)), height = ui.px(math.ceil(sz.y))})
 		ui.custom(fmt.tprintf("%s_diagram", id), diagram_draw, dd)

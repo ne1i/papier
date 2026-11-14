@@ -6,6 +6,7 @@ package papier
 //   typing                  filters (every word must be in the entry, case ignored)
 //   Tab / Shift+Tab         the next / previous filter (All, Text, Images, Files, Pinned)
 //   Up / Down, Page Up / Page Down, Ctrl+Home / Ctrl+End    move in the list
+//   Shift+Page Up / Shift+Page Down    scroll the entry's text (the wheel and the bar too)
 //   Enter, a double click   put the entry back on the clipboard (and hide)
 //   Alt+1 .. Alt+9          the same for the first nine entries shown
 //   Ctrl+P                  pin or unpin (pinned entries stay whatever the limits)
@@ -82,6 +83,21 @@ View :: struct {
 	asked_at: f64,              // when its content was asked (ui clock, ms): "Loading…" only for a slow answer
 	runs:    [dynamic]ui.Rich_Run,   // its code in the theme's colours, made once per answer (runs_for) and per theme
 	runs_for: [2]u64,           // the id and key `runs` were made for ({}: none)
+	pages:   int,               // the pages the keys moved its text by in this build (preview_pages), down positive
+}
+
+// How much of the preview's height a page of the keys moves it by: a line seen before stays in view.
+PREVIEW_PAGE_SHARE :: 0.9
+
+// The pages the keys asked (Shift+Page Up / Page Down: the keyboard stays in the search), moved in the scroll box being
+// built, the parent now. Its last layout's height and bounds; the scroll's own update clamps what is new.
+@(private = "file")
+preview_pages :: proc(app: ^App) {
+	if app.view.pages == 0 { return }
+	b := ui.parent_box()
+	page := (b.rect.max.y - b.rect.min.y) * PREVIEW_PAGE_SHARE
+	b.view_target.y = clamp(b.view_target.y + f32(app.view.pages) * page, 0, ui.view_limit(b))
+	app.view.pages = 0   // (the glide to the target is the scroll's own: it asks its frames)
 }
 
 // How long an answer of the reader may take before the preview says "Loading…": a text comes in well under a frame,
@@ -120,6 +136,7 @@ view_arrived :: proc(app: ^App, v: ^History_View) -> bool {
 		select_row(app, 0)
 		ui.vlist_scroll_to(&app.vl, 0)
 	case keep != 0 && v.keep_id == keep && v.keep_row >= 0:
+		// (the cursor follows its entry; the entries selected are ids: they stay, the list drops those gone)
 		app.vl.sel = v.keep_row
 	case:
 		app.vl.sel = count > 0 ? clamp(app.vl.sel, 0, count - 1) : -1
@@ -162,11 +179,15 @@ selected_id :: proc(app: ^App) -> u64 {
 	return e != nil ? e.id : 0
 }
 
+// Row `row` (kept in the rows) alone selected, the cursor on it, brought into view.
 select_row :: proc(app: ^App, row: int) {
 	if len(app.shown) == 0 { return }
-	app.vl.sel = clamp(row, 0, len(app.shown) - 1)
+	ui.item_selection_one(&app.vl.selection, list_rows_now(app), clamp(row, 0, len(app.shown) - 1))
 	app.vl.reveal = REVEAL_BUILDS
 }
+
+// The rows as the selection sees them now (a view that came, an entry removed: the list's copy is the last build's).
+list_rows_now :: proc(app: ^App) -> ui.Item_Rows { return {count = len(app.ids), ids = app.ids[:]} }
 
 set_filter :: proc(app: ^App, f: Filter) {
 	if app.filter == f { return }
@@ -205,21 +226,22 @@ remove_entry :: proc(app: ^App, id: u64) {
 	app.vl.sel = len(app.shown) > 0 ? clamp(app.vl.sel, 0, len(app.shown) - 1) : -1
 }
 
-// The keys of the window, taken before the search field sees them.
+// The keys of the window, taken before the search field sees them. The window's actions first, in every page and mode
+// (the settings, the edit view, a dialog over the window): the toolkit takes their keys whatever has the keyboard.
 @(private = "file")
 view_keys :: proc(app: ^App) {
+	window_keys(app)
 	if ui.views_hold_keys(&app.views) { return }   // (a dialog has the keyboard)
 	if app.settings_open { settings_keys(app); return }
 	if app.edit.active { edit_keys(app); return }
-	// (the moves of the selection: a move clears the marks, as the list's own keys do)
-	moved := false
-	if ui.key_press(.Down) || ui.key_press(.N, {.Ctrl}) { select_row(app, app.vl.sel + 1); moved = true }
-	if ui.key_press(.Up) || ui.key_press(.P, {.Alt}) { select_row(app, app.vl.sel - 1); moved = true }
-	if ui.key_press(.Page_Down) { select_row(app, app.vl.sel + PAGE_ROWS); moved = true }
-	if ui.key_press(.Page_Up) { select_row(app, app.vl.sel - PAGE_ROWS); moved = true }
-	if ui.key_press(.Home, {.Ctrl}) { select_row(app, 0); moved = true }
-	if ui.key_press(.End, {.Ctrl}) { select_row(app, len(app.shown) - 1); moved = true }
-	if moved { ui.list_marks_clear(&app.vl) }
+	// (the moves of the selection, the keyboard in the search: each key gives the row it goes to, the toolkit's
+	// item_selection_move what its modifiers do. Alone: the row alone; Shift: the range from the anchor; Ctrl+Shift: the
+	// range added; Ctrl: the cursor alone. Shift+Page Up and Down are the text's pages, Ctrl+Home and End the ends.)
+	move_keys(app)
+	if ui.key_press(.Space, {.Ctrl}) && app.vl.sel >= 0 { ui.item_selection_toggle(&app.vl.selection, list_rows_now(app), app.vl.sel) }
+	// (the entry's text, by pages: the keyboard stays in the search, so the keys are the window's, beside the list's)
+	if ui.key_press(.Page_Down, {.Shift}) { app.view.pages += 1 }
+	if ui.key_press(.Page_Up, {.Shift}) { app.view.pages -= 1 }
 	digits := [9]platform.Key{.N1, .N2, .N3, .N4, .N5, .N6, .N7, .N8, .N9}
 	for k, i in digits {
 		if ui.key_press(k, {.Alt}) && i < len(app.ids) { entry_copy(app, app.ids[i]) }
@@ -230,10 +252,39 @@ view_keys :: proc(app: ^App) {
 	}
 	if ui.key_press(.Escape) {
 		switch {
-		case ui.list_mark_count(&app.vl) > 0: ui.list_marks_clear(&app.vl)
-		case len(app.search.buf) > 0:         ui.line_edit_clear(&app.search)
-		case:                                 app_hide(app)
+		// (several selected: the toolkit's rule, the cursor's row alone; else the search, then hide)
+		case ui.item_selection_escape(&app.vl.selection, list_rows_now(app)):
+		case len(app.search.buf) > 0: ui.line_edit_clear(&app.search)
+		case:                         app_hide(app)
 		}
+	}
+}
+
+// The moves of the list while the search has the keyboard.
+@(private = "file")
+move_keys :: proc(app: ^App) {
+	n := len(app.shown)
+	if n == 0 { return }
+	at := app.vl.sel
+	for mods in ([4]platform.Modifiers{{}, {.Shift}, {.Ctrl}, {.Ctrl, .Shift}}) {
+		to, moved := at, true
+		switch {
+		case ui.key_press(.Down, mods):                            to = at + 1
+		case ui.key_press(.Up, mods):                              to = at < 0 ? 0 : at - 1
+		case .Shift not_in mods && ui.key_press(.Page_Down, mods): to = at + PAGE_ROWS
+		case .Shift not_in mods && ui.key_press(.Page_Up, mods):   to = at - PAGE_ROWS
+		// (Ctrl+Home is the plain Home here: the search keeps Home; with Shift, the range to the first)
+		case .Ctrl not_in mods && ui.key_press(.Home, mods + {.Ctrl}): to = 0
+		case .Ctrl not_in mods && ui.key_press(.End, mods + {.Ctrl}):  to = n - 1
+		// (the search's other names for Down and Up)
+		case mods == {} && ui.key_press(.N, {.Ctrl}):              to = at + 1
+		case mods == {} && ui.key_press(.P, {.Alt}):               to = at < 0 ? 0 : at - 1
+		case:                                                      moved = false
+		}
+		if !moved { continue }
+		ui.item_selection_move(&app.vl.selection, list_rows_now(app), clamp(to, 0, n - 1), mods)
+		app.vl.reveal = REVEAL_BUILDS
+		at = app.vl.sel
 	}
 }
 
@@ -459,7 +510,8 @@ build_list :: proc(app: ^App, em: f32) {
 		if row.double_clicked { entry_copy(app, e.id) }
 		drag_watch(app, row, e)
 		if row.right_clicked {
-			select_row(app, i)
+			// (the list made it the cursor's row; on a selected row the selection stays: the menu acts on it)
+			app.vl.reveal = REVEAL_BUILDS
 			entry_menu_open(app, e, ui.mouse_pos())
 		}
 	}
@@ -487,7 +539,8 @@ build_status :: proc(app: ^App, em: f32) {
 		}
 		if ui.style({font_size = em * 0.88}) {
 			if ui.tags("weak") {
-				ui.next({width = ui.fill()})
+				// (content: a message said there, an address refused with it, is copied as any text)
+				ui.next({width = ui.fill(), flags = {.Selectable}})
 				msg := app.status
 				if (msg == "" || ui.now_ms() > app.status_until) && app.ocr_reading != 0 {
 					msg = i18n.tr("Reading the text of the image…")
@@ -605,6 +658,7 @@ build_view :: proc(app: ^App, em: f32) {
 
 @(private = "file")
 build_view_body :: proc(app: ^App, em: f32) {
+	defer app.view.pages = 0   // (a preview that does not scroll, a picture, lets them go: none waits for the next text)
 	e := selected(app)
 	if e == nil { return }
 	// the edit view is its entry's: another selection leaves it
@@ -619,7 +673,8 @@ build_view_body :: proc(app: ^App, em: f32) {
 		ui.next({width = ui.text_size(em * 0.3), height = ui.pct(1)})
 		ui.label(fmt.tprintf("%s###kind", i18n.tr(KIND_LABELS[e.kind])))
 		if ui.tags("weak") {
-			ui.next({width = ui.fill(), height = ui.pct(1)})
+			// (content: what the entry is, its size and age, to copy as the text is)
+			ui.next({width = ui.fill(), height = ui.pct(1), flags = {.Selectable}})
 			if ui.style({font_size = em * 0.88}) {
 				lang := loaded_for(app, e) ? form_label(app.loaded) : ""
 				if lang != "" { lang = fmt.tprintf("%s · ", lang) }
@@ -710,12 +765,15 @@ build_view_body :: proc(app: ^App, em: f32) {
 		return
 	}
 	if ui.scroll_y("###text") {
+		preview_pages(app)
 		ui.spacer(ui.px(em * 0.5))
-		ui.next({width = ui.fill()})
+		// (as tall as its text: the base style's height is a control's, and a content cut to it never overflows the
+		// scroll box, which then neither scrolls nor shows its bar)
+		ui.next({width = ui.fill(), height = ui.children_sum()})
 		if ui.row() {
 			ui.spacer(ui.px(em * 0.8))
 			ui.next({width = ui.fill()})
-			if ui.style({font = app.mono, font_size = em * 0.95}) {
+			if ui.style({font = ui.mono_font(), font_size = em * 0.95}) {
 				if has_code {
 					// (coloured once per answer and per theme, not at each frame: runs point into app.loaded's text)
 					if app.view.runs_for != {e.id, e.key} {
@@ -749,17 +807,20 @@ form_label :: proc(l: Loaded_Entry) -> string {
 @(private = "file")
 build_markdown :: proc(app: ^App, l: ^Loaded_Entry, em: f32) {
 	if ui.scroll_y("###markdown") {
+		preview_pages(app)
 		ui.spacer(ui.px(em * 0.5))
-		ui.next({width = ui.fill()})
+		// (as tall as the document: see build_view_body's text)
+		ui.next({width = ui.fill(), height = ui.children_sum()})
 		if ui.row() {
 			ui.spacer(ui.px(em * 0.8))
-			ui.next({width = ui.fill()})
+			ui.next({width = ui.fill(), height = ui.children_sum()})
 			if ui.column() {
 				// (this frame's room, from the window: the box's own width is the last frame's; the pane less its sides
 				// and the scroll bar)
 				u := ui.frame_new(Markdown_User)
 				u^ = {app = app, loaded = l, width = (app.room - app.place.split) * ui.scale() - em * 2.6}
-				u.cfg = markdown.View_Options{prose = app.shared.font, mono = app.mono, user = u, link = markdown_link}
+				// (prose and mono 0: the families the user chose, else papier's: the toolkit's text faces)
+				u.cfg = markdown.View_Options{user = u, link = markdown_link}
 				cfg := u.cfg
 				cfg.code = markdown_code
 				markdown.view(l.markdown, fmt.tprintf("md%d", l.id), l.source, cfg)
@@ -787,7 +848,7 @@ markdown_link :: proc(user: rawptr, url: string) {
 // view are built; the doc was read with the answer.
 @(private = "file")
 build_diff :: proc(app: ^App, l: ^Loaded_Entry, em: f32) {
-	o := diff.View_Options{font = app.mono, size = em * 0.95, selectable = true}
+	o := diff.View_Options{font = ui.mono_font(), size = em * 0.95}
 	if l.has_code { o.language = l.code }
 	ui.next({width = ui.fill(), height = ui.fill()})
 	diff.view(fmt.tprintf("###diff%d", l.id), l.diff, .Stacked, o)

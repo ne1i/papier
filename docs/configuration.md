@@ -32,7 +32,8 @@ Papier's defaults: the theme `Papier`, the text size 14 px, its own title bar (`
 Night, Catppuccin, Rosé Pine, Kanagawa, One Dark, Solarized…), or one of your own: Settings > Appearance links to
 `$XDG_CONFIG_HOME/papier/themes.txt`, made with a commented guide at the first click and read again each time it is saved.
 
-Papier reads `appearance.text.ui_font`, `appearance.text.mono_font` (the text of the entries) and
+`appearance.text.ui_font`, `appearance.text.mono_font` (the text of the entries) and `appearance.text.prose_font` (a
+Markdown entry's text) apply at once, in every window: gui_toolkit loads the family and swaps it in. Papier reads
 `appearance.text.emoji_font` at the start. `general.menu` and `general.autostart` are the install's
 (its dialog, the Installation page, `papier --install`).
 

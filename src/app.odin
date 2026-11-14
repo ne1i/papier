@@ -50,7 +50,7 @@ App :: struct {
 	shared:     host.Shared,
 	main:       host.Host,
 	icons:      font.Font_Id,   // Lucide (icons.odin)
-	mono:       font.Font_Id,   // what a text entry is shown in
+	mono:       font.Font_Id,   // papier's own face of a text entry (Standard_Targets.faces; drawn: ui.mono_font())
 	prefs:      config.Prefs,
 	prefs_writer: config.User_Writer,   // the preferences file, written off the window's thread when they change
 	prefs_path: string,                 // the preferences file, at the settings' foot (owned)
@@ -182,7 +182,7 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	licence_init(app)
 	// (Lucide: the icons of the palette and of the menus; the widgets' own marks have the toolkit's font)
 	h.state.icon_font = app.icons
-	app.vl.multi = true   // (a Ctrl or Shift click marks entries: actions.odin acts on them)
+	app.vl.multi = true   // (Ctrl and Shift clicks and keys select several entries: Copy, Pin and Remove act on them)
 	h.after_input = FRAMES_AFTER_INPUT
 	h.params = app_params
 	h.input = app_input
@@ -300,33 +300,27 @@ app_free :: proc(app: ^App) {
 	config.prefs_destroy(&app.prefs)
 }
 
-// What the standard settings reach besides the interface: the renderer, the fonts, the host's partial redraw.
+// What the standard settings reach besides the interface: the renderer, the fonts, the host's partial redraw, and
+// papier's own monospace face, which the monospace setting's Default draws in (the families chosen are the toolkit's
+// to load and apply, live).
 @(private = "file")
 app_standard_targets :: proc(app: ^App) -> prefs_page.Standard_Targets {
-	return {renderer = &app.shared.r, fonts = &app.shared.fonts, partial_redraw = &app.main.partial_redraw}
+	return {renderer = &app.shared.r, fonts = &app.shared.fonts, partial_redraw = &app.main.partial_redraw, faces = #partial [ui.Text_Face]font.Font_Id{.Mono = app.mono}}
 }
 
-// The fonts the user named (appearance.text.*: read at the start). Found before the window's loop: the system's font
-// lists and the emoji file are read here, the start-up's exception to "no file on this thread".
+// papier's own faces, and the emoji file the user named (read at the start). Found before the window's loop: the
+// system's monospace and the emoji file are read here, the start-up's exception to "no file on this thread".
 @(private = "file")
 app_fonts :: proc(app: ^App) {
 	fonts := &app.shared.fonts
-	if family := config.string_of(&app.prefs, prefs_page.UI_FONT_PREF); family != "" {
-		if id, ok := font.load_system(fonts, family); ok { app.shared.font = id } else { log.warnf("papier: no font %q on this system", family) }
-	}
-	app.mono = mono_font(fonts, config.string_of(&app.prefs, prefs_page.MONO_FONT_PREF))
+	app.mono = mono_font(fonts)
 	if path := config.string_of(&app.prefs, prefs_page.EMOJI_FONT_PREF); path != "" { font.set_emoji_source(fonts, path) }
 }
 
-// The face of the texts shown as they are (an entry's text, code, a diff): the family the user named, else the system's
-// monospace, drawn for its screens (the embedded one is thin at small sizes), the first of MONO_FAMILIES it has, else the
-// embedded one.
+// papier's face of the texts shown as they are (an entry's text, code, a diff): the system's monospace, drawn for its
+// screens (the embedded one is thin at small sizes), the first of MONO_FAMILIES it has, else the embedded one.
 @(private = "file")
-mono_font :: proc(fonts: ^font.State, named: string) -> font.Font_Id {
-	if named != "" {
-		if id, ok := font.load_system(fonts, named); ok { return id }
-		log.warnf("papier: no font %q on this system", named)
-	}
+mono_font :: proc(fonts: ^font.State) -> font.Font_Id {
 	families := MONO_FAMILIES
 	for family in families {
 		if id, ok := font.load_system(fonts, family); ok { return id }
@@ -435,8 +429,26 @@ app_paste_follow :: proc(app: ^App) {
 	}
 }
 
-app_toggle :: proc(app: ^App) {
-	if app.visible && !app.hide_due { app_hide(app) } else { app_show(app) }
+// What the shortcut does to the window.
+Toggle_Act :: enum { Show, Raise, Hide }
+
+// The shortcut's decision. A window shown behind another (the person clicked elsewhere) is what they want back: it
+// comes to the front, as a hidden one is shown. Only the window they are in goes.
+toggle_act :: proc(shown, focused: bool) -> Toggle_Act {
+	if !shown { return .Show }
+	return focused ? .Hide : .Raise
+}
+
+// The shortcut (Windows' hotkey, `papier toggle`). `by_visibility`: the tray's click, which takes the keyboard from the
+// window before it comes (the taskbar's), so it hides a shown window whatever has the keyboard.
+app_toggle :: proc(app: ^App, by_visibility := false) {
+	shown := app.visible && !app.hide_due
+	// (the platform's `active`: the window has the keyboard, set by its focus or activation events; false once hidden)
+	focused := by_visibility || (app.main.win != nil && app.main.win.active)
+	switch toggle_act(shown, focused) {
+	case .Hide:         app_hide(app)
+	case .Show, .Raise: app_show(app)   // (shown: raised with the second start's token, the search kept)
+	}
 }
 
 // The id of papier's hotkey (platform.hotkey_register).
@@ -657,7 +669,7 @@ app_tray :: proc(app: ^App) {
 	if app.tray_language != i18n.version() { app_tray_menu(app) }
 	for e in platform.tray_poll(app.tray) {
 		#partial switch e.kind {
-		case .Click: app_toggle(app)
+		case .Click: app_toggle(app, by_visibility = true)
 		case .Menu_Item:
 			switch Tray_Item(e.item) {
 			case .Show:  app_show(app)

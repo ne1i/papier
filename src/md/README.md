@@ -21,7 +21,8 @@ the files, the tests) is [docs/architecture.md](../../docs/architecture.md).
 
 ## State machines
 
-- The window: hidden or shown, driven by an ordered queue of commands (show, hide, toggle, reload, quit).
+- The window: hidden, shown behind another window, or shown with the keyboard, driven by an ordered queue of commands
+  (show, hide, toggle, reload, quit). Toggle hides only the last state; it brings the second one to the front.
 - The history's version: the watcher bumps it after each transaction; the window asks for the list when it moves.
 - A search: each query has a number; only the newest query's view is applied.
 - The selected entry: loading, then loaded; an edit asked while loading starts when the text comes.
@@ -41,7 +42,8 @@ the files, the tests) is [docs/architecture.md](../../docs/architecture.md).
 ## File Index
 
 - [infrastructure/one-process.md](infrastructure/one-process.md): why one resident process that hides its window, the
-  second start, the order of show and hide, the switch to an update
+  second start, what the shortcut does (hide, show or bring to the front), the order of show and hide, the switch to an
+  update
 - [features/clipboard.md](features/clipboard.md): data-control instead of a focused window, papier's own copies, an
   empty selection, what a copy becomes (`plan_capture`, `classify`)
 - [data/history.md](data/history.md): the SQLite model (entries, reps, blobs by hash, full-text texts), one writer, one
