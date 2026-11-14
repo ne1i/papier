@@ -3,6 +3,11 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.23.0] - 2026-11-14
+
+### Changed
+- **The command palette is gui_toolkit's, the same as in the other programs.** `>` searches the actions, `:` the settings (a switch flips and the palette stays open), what you choose often comes first, and an action that cannot act is listed last.
+
 ## [0.22.0] - 2026-11-14
 
 ### Added
@@ -435,6 +440,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.23.0]: https://github.com/sachahjkl/papier/releases/tag/v0.23.0
 [0.22.0]: https://github.com/sachahjkl/papier/releases/tag/v0.22.0
 [0.21.2]: https://github.com/sachahjkl/papier/releases/tag/v0.21.2
 [0.21.1]: https://github.com/sachahjkl/papier/releases/tag/v0.21.1
