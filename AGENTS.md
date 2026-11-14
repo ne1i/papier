@@ -2,7 +2,8 @@
 
 A clipboard manager for Linux (Wayland), in Odin, on the `ext/gui_toolkit` submodule (collection `gt`).
 
-Read first: [README.md](README.md), [docs/architecture.md](docs/architecture.md), [docs/development.md](docs/development.md).
+Read first: [README.md](README.md), [src/md/README.md](src/md/README.md), [docs/architecture.md](docs/architecture.md),
+[docs/development.md](docs/development.md).
 
 ## Build and test
 
@@ -35,3 +36,13 @@ Every step is a command of `tools/papiertool` (`help` lists them):
 - When a work is done, remove its entry in the same commit as its changelog fragment.
 - Work that touches several programs goes in the roadmap of gui_toolkit.
 - `papiertool check` checks its format with the changelog's.
+
+## Intent
+
+This project follows <https://srcmd.org>, with the Markdown in `src/md`. Read `src/md/README.md` first.
+
+- Change the intent first, then derive the code and the tests. A change of design changes its intent file in the same
+  commit.
+- Keep there what the code does not show: the purpose, the decisions, the refused alternatives, the subtle points.
+- `src/md/README.md` lists every other file of the folder in its `## File Index`.
+- The user's documentation and the developer's how-to stay in `docs/`; `src/md` links to them.

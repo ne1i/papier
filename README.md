@@ -100,6 +100,7 @@ papier prefs            # every setting
 - [Configuration](docs/configuration.md): every preference.
 - [On the desktop](docs/desktop.md): requirements, install, Hyprland, Sway, KDE, NixOS.
 - [Architecture](docs/architecture.md): the threads, the clipboard protocol, the history on the disk.
+- [Intent](src/md/README.md): why the code has its shape, the decisions and the refused alternatives.
 - [Development](docs/development.md): building, testing, `papiertool`, releases.
 
 ## Build

@@ -1,7 +1,8 @@
 # Architecture
 
 Papier is one program in [Odin](https://odin-lang.org) on [gui_toolkit](https://github.com/sachahjkl/gui_toolkit) (the
-`ext/gui_toolkit` submodule, the collection `gt`). This page says how its parts fit, and why.
+`ext/gui_toolkit` submodule, the collection `gt`). This page says how its parts fit. The reasons behind them (the
+decisions, the refused alternatives, the subtle points) are in [src/md](../src/md/README.md).
 
 ## One process, its threads
 
@@ -59,65 +60,18 @@ and a drag out of the list, a loop of the system that blocks by nature. The Save
 
 At rest every thread sleeps: 0 % CPU, hidden or shown (the caret's blink aside).
 
-## Why one process
+## Where each part lives
 
-A clipboard manager on Wayland must hold a data-control connection for the whole session, and its window must come fast.
-A window that hides instead of closing keeps the GPU device, the fonts and the history in memory: `papier toggle` shows it
-in a few milliseconds (a new surface and its first configure, then a frame). gui_toolkit's `host_hide` / `host_show` do
-this: on Wayland the surface and its role go at the hide and new ones come at the show, so no state of the last frames
-waits in the compositor.
-
-A second `papier` takes the instance name (`gt:instance`: a lock file and a Unix socket in `$XDG_RUNTIME_DIR`), finds it
-taken, sends its command (`show`, `toggle`, `copy 42`…) and ends.
-
-## The clipboard (src/wlclip)
-
-A Wayland client hears of the clipboard only while one of its windows has the focus. A manager uses data-control instead:
-`ext-data-control-v1`, or `zwlr-data-control-unstable-v1` where only that one is offered (both have the same requests).
-`wlclip` opens libwayland-client with `dlopen`, builds the protocol's tables by hand, binds the manager and a device on the
-seat, and reports each new selection with its MIME types. It reads a type over a pipe while it keeps serving the
-connection, and it can own the selection: it then answers each `send` with the bytes it holds.
-
-A selection that comes from papier's own source is not recorded again. When the selection goes empty (its owner quit),
-the watcher puts the last entry back.
-
-## What a copy becomes (src/capture.odin)
-
-`plan_capture` picks the types to read from those offered: one text type (stored as `text/plain;charset=utf-8`), the HTML,
-one image type, one file list; a secret or an ignored type stops it. `classify` makes the entry: its kind (files, then
-text or rich text, then image), its key (the hash of its main type) and its preview. These two procedures are pure and
-tested.
-
-## The history (src/history)
-
-One SQLite database, `history.db`, in WAL mode. SQLite is linked into papier: its amalgamation is in `ext/sqlite`, and
-`papiertool build` compiles it (with FTS5).
-
-- **entries**: an entry's id, the time of its last copy, its pin, its kind, its key and its preview.
-- **reps**: its types, in order: the MIME type, the hash of the bytes, their size.
-- **blobs**: the bytes, by their 64-bit XXH3 hash. The same bytes are stored once.
-- **texts**: the whole text of each entry, in a full-text index (FTS5, trigrams): the search finds a word past the
-  preview.
-- **Transactions**: each change (a copy, an edit, a removal, a trim) is one transaction: another connection sees the old
-  list or the new one. The reader and the image decoder read through connections of their own.
-- **Keys**: a copy whose key is already there moves that entry to the top.
-- **Import**: at open, the history of papier 0.4 (a text index and a directory of blobs) goes into the database in one
-  transaction, then its files are deleted (src/history/import.odin).
-- **Limits**: `trim` drops the entries past the count or the age, pinned ones aside; `collect` deletes the bytes that no
-  entry names.
-
-## The window (src/view.odin)
+| Part | Code | Its reasons |
+|---|---|---|
+| The one process, the instance socket | `src/app.odin`, `src/commands.odin` | [one-process.md](../src/md/infrastructure/one-process.md) |
+| The clipboard (Wayland data-control) | `src/wlclip`, `src/watcher.odin` | [clipboard.md](../src/md/features/clipboard.md) |
+| What a copy becomes | `src/capture.odin` (pure, tested) | [clipboard.md](../src/md/features/clipboard.md) |
+| The history (SQLite, `history.db`) | `src/history`, SQLite in `ext/sqlite` | [history.md](../src/md/data/history.md) |
+| The window: list, search, preview, thumbnails | `src/view.odin`, `src/reader.odin`, `src/decoder.odin`, `src/thumbs.odin` | [window.md](../src/md/features/window.md) |
 
 The interface is built again at each frame (immediate mode), and only when something changed. The list is the toolkit's
-virtual list: it builds the rows in view, whatever the length of the history. The search runs on the reader: it looks for each word of three letters or more in
-the whole text (the full-text index), and for a shorter word in a lower-case copy of the preview. Each query has a
-number; the window applies the view of the newest one only, and keeps a newer list aside until that view comes. The
-selected entry's text, its code's language and its QR text come from the reader too: the preview says "Loading…" until
-they do, and an edit asked meanwhile begins when they come. An image is decoded on a thread of its own (src/decoder.odin) when its
-entry is selected: the newest selection wins, and the window makes one texture of the picture when the decoder wakes it. The
-same thread makes the list's thumbnails (src/thumbs.odin): at each build the window says which image rows in view still
-want one, in place of what it said before, and the thread shrinks each picture to 72 pixels on its shorter side; the
-window keeps 300 of their textures, the least lately shown going first.
+virtual list: it builds the rows in view, whatever the length of the history.
 
 ## Updates (src/updates.odin)
 
