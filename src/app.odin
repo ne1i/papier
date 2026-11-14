@@ -171,7 +171,7 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	// (the views' memory read here, before the loop, as the window's state is; written on its own thread from now on)
 	ui.views_init(&app.views, {path = views_path()})
 	ui.set_views(&h.state, &app.views)
-	ui.views_set_windows(&app.views, host.view_windows(h))
+	ui.views_set_windows(&app.views, host.view_windows(h.shared))
 	qr_register(app)
 	// (a message said between two builds, a task's result, shows in this window's state)
 	app.announcer = {mode = app.settings.messages, window = win, state = &h.state}
