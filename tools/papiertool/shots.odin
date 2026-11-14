@@ -89,7 +89,7 @@ run_shots :: proc(args: []string) -> int {
 	cdp.wait_for(&c, "Editing", SESSION_WAIT, gone = true)
 	// the command palette, searched
 	cdp.key(&c, "ctrl+k")
-	cdp.wait_for(&c, "Keyboard shortcuts", SESSION_WAIT)
+	cdp.wait_for(&c, "Copy as plain text", SESSION_WAIT)   // (papier's commands come first in the list)
 	cdp.type_text(&c, "theme")
 	cdp.wait_for(&c, "Show every entry", SESSION_WAIT, gone = true)
 	shot(&c, out, "palette", &failed)
@@ -114,7 +114,7 @@ run_shots :: proc(args: []string) -> int {
 	cdp.wait_for(&c, "proc fibonacci", SESSION_WAIT)
 	// the settings
 	cdp.key(&c, "ctrl+,")
-	cdp.wait_for(&c, "Max entries", SESSION_WAIT, gone = true)   // (the first page: General)
+	cdp.wait_for(&c, "The language of the interface", SESSION_WAIT)   // (the first page, General: the palette's jump is gone)
 	cdp.wait_for(&c, "Appearance", SESSION_WAIT)
 	cdp.click_text(&c, "Appearance")
 	cdp.wait_for(&c, "Light or dark", SESSION_WAIT)
