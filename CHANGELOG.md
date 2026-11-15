@@ -3,6 +3,11 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.27.0] - 2026-11-15 16:47
+
+### Added
+- **A license to buy.** The pricing page sells a license of papier: a payment once through Paddle, the license by mail and on the thank-you page at once, its key or its file to give the program.
+
 ## [0.26.0] - 2026-11-15 14:18
 
 ### Added
@@ -467,6 +472,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.27.0]: https://github.com/sachahjkl/papier/releases/tag/v0.27.0
 [0.26.0]: https://github.com/sachahjkl/papier/releases/tag/v0.26.0
 [0.25.0]: https://github.com/sachahjkl/papier/releases/tag/v0.25.0
 [0.24.0]: https://github.com/sachahjkl/papier/releases/tag/v0.24.0
