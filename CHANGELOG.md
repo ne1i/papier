@@ -3,6 +3,12 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.25.0] - 2026-11-15
+
+### Added
+- **Frame rate in Settings.** Settings › Rendering › Frame rate caps how many pictures a second papier draws when something moves: the screen's rate, 30 to 240, or no limit.
+- **WebP on Windows.** The Windows version ships its own libwebp beside the program, so WebP pictures show there; the setup installs it with papier.
+
 ## [0.24.0] - 2026-11-15
 
 ### Changed
@@ -456,6 +462,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.25.0]: https://github.com/sachahjkl/papier/releases/tag/v0.25.0
 [0.24.0]: https://github.com/sachahjkl/papier/releases/tag/v0.24.0
 [0.23.2]: https://github.com/sachahjkl/papier/releases/tag/v0.23.2
 [0.23.1]: https://github.com/sachahjkl/papier/releases/tag/v0.23.1

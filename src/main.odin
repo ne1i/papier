@@ -16,7 +16,7 @@ import setup "gt:setup"
 import timefmt "gt:timefmt"
 import "history"
 
-APP_VERSION :: "0.24.0"
+APP_VERSION :: "0.25.0"
 
 USAGE :: `papier: the clipboard's history
 
