@@ -1,7 +1,7 @@
 // Package history: the clipboard entries papier shows, newest first (Store.entries), and the bytes of each type of each
 // entry, by their hash.
 //
-//   Linux    papier keeps them: a SQLite database it writes (store_linux.odin).
+//   Unix     papier keeps them: a SQLite database it writes (store_unix.odin; portable file IO, so macOS shares it).
 //   Windows  the system keeps them: its clipboard history, read through the Windows Runtime (store_windows.odin).
 //
 // An entry has a key: the hash of its main representation (the text of a text copy, the bytes of an image).

@@ -77,9 +77,11 @@ run_check :: proc(args: []string) -> int {
 	// (a text of the code not in the catalogue, or not translated, shows in English to a French user)
 	if problem := toolbox.i18n_catalogue(I18N.dirs, "i18n/fr.txt", "fr", true); problem != "" { fmt.eprintln(problem); return 1 }
 	if !toolbox.run(toolbox.odin_command(p, "check"), {echo = true}) { return 1 }
-	// (the whole program for Windows too, from any system: Windows code that does not compile fails the Linux job)
+	// (the whole program for Windows and macOS too, from any system: code of another system that does not compile fails
+	// the Linux job)
 	when ODIN_OS != .Windows {
 		if !toolbox.check_windows(p) { return 1 }
+		if !toolbox.check_darwin(p) { return 1 }
 	}
 	if !toolbox.run({"odin", "check", "tools/papiertool", fmt.tprintf("-collection:gt=%s/src", toolbox.toolkit_dir(p)), "-vet"}, {echo = true}) { return 1 }
 	if run_test(nil) != 0 { return 1 }

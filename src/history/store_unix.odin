@@ -1,7 +1,7 @@
 #+build !windows
 package history
 
-// The history on Linux: one SQLite database (history.db, WAL mode) that papier writes.
+// The history on Linux (and macOS: only SQLite and file IO, nothing of the system's): one SQLite database (history.db, WAL mode) that papier writes.
 //
 //   entries  an entry: its id, the time of its last copy, its pin, its kind, its key, its preview
 //   reps     its representations, in order: a MIME type, the hash of the bytes, their size
