@@ -14,8 +14,8 @@ PRICING_URL :: "https://papier.froment.software/pricing/"
 licence_init :: proc(app: ^App) {
 	// (a debug build accepts the development pair: the tests and the pictures register with it)
 	prefs_page.licence_init(&app.licence, &app.main.state, {
-		store = {product = papier_licence.PRODUCT, program = APP_NAME, accept_dev = ODIN_DEBUG},
-		name = "Papier", pricing_url = PRICING_URL, owner = app.main.win,
+		store = {product = papier_licence.PRODUCT, program = APP_FOLDER, accept_dev = ODIN_DEBUG},
+		name = APP_TITLE, pricing_url = PRICING_URL, owner = app.main.win,
 	})
 }
 

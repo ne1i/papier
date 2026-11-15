@@ -213,7 +213,7 @@ live_window :: proc(l: ^Live) {
 	check(l, found && f[1] == "text", "the history has it, as text")
 
 	// a theme chosen in the settings: saved, its folder made when it is not there, and still chosen after the reload
-	cfg := fmt.tprintf("%s/config/papier", l.dir)
+	cfg := fmt.tprintf("%s/config/FromentSoftware/Papier", l.dir)
 	_ = os.remove_all(cfg)
 	check(l, cdp.key(&c, "ctrl+,"), "Ctrl+,")
 	check(l, cdp.wait_for(&c, "Appearance", SESSION_WAIT), "the settings open")

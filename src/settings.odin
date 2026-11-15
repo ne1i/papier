@@ -1,7 +1,7 @@
 package papier
 
 // The preferences: one registry (gt:config) for the daemon and the picker. The user's file is
-// $XDG_CONFIG_HOME/papier/prefs (`papier set <name> <value>` writes it); `--pref name=value` overrides it for one run.
+// $XDG_CONFIG_HOME/FromentSoftware/Papier/prefs (`papier set <name> <value>` writes it); `--pref name=value` overrides it for one run.
 // The look, the text, the scrolling, the input, the delays, the rendering, the updates and the messages are the toolkit's
 // standard settings (prefs_page.standard_register, gui_toolkit docs/settings.md); papier adds its own after them.
 
@@ -13,13 +13,18 @@ import prefs_page "gt:prefs_page"
 import "gt:ui"
 
 APP_NAME :: "papier"
+// The name a person reads: the window, the tray, the menus, the texts. APP_NAME stays the technical name.
+APP_TITLE :: "Papier"
+// papier's folders (settings, history, state, logs, licence): its vendor's folder, then its own (gui_toolkit's
+// src/md/features/folders.md). The runtime folder keeps APP_NAME: an old and a new copy still meet on its socket.
+APP_FOLDER :: "FromentSoftware" + platform.USER_DIR_SEPARATOR + APP_TITLE
 
 // papier's identity in the standard settings: its theme and its name. The rest is the toolkit's, as in its other
 // programs (prefs_page.STANDARD_DEFAULTS).
 @(private = "file")
 standard_defaults :: proc() -> prefs_page.Standard_Defaults {
 	d := prefs_page.STANDARD_DEFAULTS
-	d.theme, d.app_name = "Papier", APP_NAME
+	d.theme, d.app_name = "Papier", APP_TITLE
 	return d
 }
 
@@ -27,8 +32,8 @@ standard_defaults :: proc() -> prefs_page.Standard_Defaults {
 // are registered in English, before the language is known: the settings page translates them where it shows them
 // (i18n.later marks them for the catalogue). The titles are the ones the names make, written out to be translated.
 PREF_DEFS := [?]config.Def{
-	{name = "paste.on_select", title = i18n.later("On select"), description = i18n.later("An entry chosen (Enter, a double click, Alt+1…9) is pasted into the program papier was called from: the window hides and papier presses the paste keys there."), kind = .Bool, default = {b = true}, tags = {"auto paste", "insert", "type"}},
-	{name = "paste.keys", title = i18n.later("Keys"), description = i18n.later("The keys papier presses to paste: Ctrl+V in most programs, Ctrl+Shift+V in a terminal, Shift+Insert in both on many systems."), kind = .String, default = {s = "Ctrl+V"}, tags = {"ctrl+v", "terminal", "shortcut"}},
+	{name = "paste.on_select", title = i18n.later("On select"), description = i18n.later("An entry chosen (Enter, a double click, Alt+1…9) is pasted into the program Papier was called from: the window hides and Papier presses the paste keys there."), kind = .Bool, default = {b = true}, tags = {"auto paste", "insert", "type"}},
+	{name = "paste.keys", title = i18n.later("Keys"), description = i18n.later("The keys Papier presses to paste: Ctrl+V in most programs, Ctrl+Shift+V in a terminal, Shift+Insert in both on many systems."), kind = .String, default = {s = "Ctrl+V"}, tags = {"ctrl+v", "terminal", "shortcut"}},
 	{name = "window.close_on_copy", title = i18n.later("Close on copy"), description = i18n.later("Close the window when an entry is copied."), kind = .Bool, default = {b = true}, tags = {"hide", "dismiss"}},
 	{name = "window.width", title = i18n.later("Width"), description = i18n.later("The window's width at its first start, in logical pixels."), kind = .Int, default = {i = 900}, min = 320, max = 4000, bounded = true, unit = "px", tags = {"size", "window"}},
 	{name = "window.height", title = i18n.later("Height"), description = i18n.later("The window's height at its first start, in logical pixels."), kind = .Int, default = {i = 560}, min = 240, max = 4000, bounded = true, unit = "px", tags = {"size", "window"}},
@@ -56,28 +61,28 @@ Settings :: struct {
 }
 
 prefs_file :: proc(allocator := context.temp_allocator) -> string {
-	return strings.concatenate({platform.user_dir(.Config, APP_NAME, context.temp_allocator), "/prefs"}, allocator)
+	return strings.concatenate({platform.user_dir(.Config, APP_FOLDER, context.temp_allocator), "/prefs"}, allocator)
 }
 
 // The user's own themes, beside the preferences (prefs_page.Themes_File).
 themes_file :: proc(allocator := context.temp_allocator) -> string {
-	return strings.concatenate({platform.user_dir(.Config, APP_NAME, context.temp_allocator), "/themes.txt"}, allocator)
+	return strings.concatenate({platform.user_dir(.Config, APP_FOLDER, context.temp_allocator), "/themes.txt"}, allocator)
 }
 
 // Where the window's state is (state.odin): the user's state folder, "window".
 state_path :: proc(allocator := context.temp_allocator) -> string {
-	return strings.concatenate({platform.user_dir(.State, APP_NAME, context.temp_allocator), "/window"}, allocator)
+	return strings.concatenate({platform.user_dir(.State, APP_FOLDER, context.temp_allocator), "/window"}, allocator)
 }
 
 // Where the palette remembers what the user chose (gui_toolkit's usage memory, its keys `<source>:<id>`): the user's
 // state folder, "palette_choices.txt".
 palette_choices_path :: proc(allocator := context.temp_allocator) -> string {
-	return strings.concatenate({platform.user_dir(.State, APP_NAME, context.temp_allocator), "/palette_choices.txt"}, allocator)
+	return strings.concatenate({platform.user_dir(.State, APP_FOLDER, context.temp_allocator), "/palette_choices.txt"}, allocator)
 }
 
 // Where the views remember how the user shows each dialog (gui_toolkit's views): the user's state folder, "views.txt".
 views_path :: proc(allocator := context.temp_allocator) -> string {
-	return strings.concatenate({platform.user_dir(.State, APP_NAME, context.temp_allocator), "/views.txt"}, allocator)
+	return strings.concatenate({platform.user_dir(.State, APP_FOLDER, context.temp_allocator), "/views.txt"}, allocator)
 }
 
 // The registry with the user's file and `args`' --pref read in. Returns the arguments that are not preferences.

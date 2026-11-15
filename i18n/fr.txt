@@ -73,8 +73,8 @@ fr Filtre précédent
 en Clear the history (pinned entries stay)
 fr Vider l'historique (les éléments épinglés restent)
 
-en papier
-fr papier
+en Papier
+fr Papier
 
 en Settings
 fr Réglages
@@ -88,11 +88,11 @@ fr Raccourcis clavier
 en Hide the window
 fr Masquer la fenêtre
 
-en Restart papier
-fr Redémarrer papier
+en Restart Papier
+fr Redémarrer Papier
 
-en Quit papier
-fr Quitter papier
+en Quit Papier
+fr Quitter Papier
 
 en Removed %d entry
 en+ Removed %d entries
@@ -102,8 +102,8 @@ fr+ %d éléments supprimés
 en Copied the QR code's content
 fr Contenu du code QR copié
 
-en papier's keys
-fr Les touches de papier
+en Papier's keys
+fr Les touches de Papier
 
 en The preferences cannot be written
 fr Les réglages ne peuvent pas être enregistrés
@@ -248,14 +248,14 @@ fr Le programme ne démarre pas
 en On select
 fr Coller l'élément choisi
 
-en An entry chosen (Enter, a double click, Alt+1…9) is pasted into the program papier was called from: the window hides and papier presses the paste keys there.
-fr Un élément choisi (Entrée, un double clic, Alt+1…9) est collé dans le programme d'où papier a été appelé : la fenêtre se masque et papier y appuie sur les touches de collage.
+en An entry chosen (Enter, a double click, Alt+1…9) is pasted into the program Papier was called from: the window hides and Papier presses the paste keys there.
+fr Un élément choisi (Entrée, un double clic, Alt+1…9) est collé dans le programme d'où Papier a été appelé : la fenêtre se masque et Papier y appuie sur les touches de collage.
 
 en Keys
 fr Touches
 
-en The keys papier presses to paste: Ctrl+V in most programs, Ctrl+Shift+V in a terminal, Shift+Insert in both on many systems.
-fr Les touches sur lesquelles papier appuie pour coller : Ctrl+V dans la plupart des programmes, Ctrl+Maj+V dans un terminal, Maj+Inser dans les deux sur de nombreux systèmes.
+en The keys Papier presses to paste: Ctrl+V in most programs, Ctrl+Shift+V in a terminal, Shift+Insert in both on many systems.
+fr Les touches sur lesquelles Papier appuie pour coller : Ctrl+V dans la plupart des programmes, Ctrl+Maj+V dans un terminal, Maj+Inser dans les deux sur de nombreux systèmes.
 
 en Close on copy
 fr Fermer à la copie
@@ -389,8 +389,8 @@ fr Mises à jour
 en Rendering
 fr Rendu
 
-en This desktop draws no title bar for papier's window (GNOME): papier keeps its own.
-fr Ce bureau ne dessine pas de barre de titre pour la fenêtre de papier (GNOME) : papier garde la sienne.
+en This desktop draws no title bar for Papier's window (GNOME): Papier keeps its own.
+fr Ce bureau ne dessine pas de barre de titre pour la fenêtre de Papier (GNOME) : Papier garde la sienne.
 
 en Shortcut
 fr Raccourci
@@ -413,8 +413,8 @@ fr Fenêtre active
 en Start with the session, in the notification area
 fr Démarrer avec la session, dans la zone de notification
 
-en papier in the terminal (on the PATH)
-fr papier dans le terminal (dans le PATH)
+en Papier in the terminal (on the PATH)
+fr Papier dans le terminal (dans le PATH)
 
 en Rich text
 fr Texte enrichi

@@ -24,33 +24,33 @@ Action :: enum u8 {
 }
 
 ACTIONS := [Action]ui.Command{
-	.Copy            = {label = i18n.later("Copy"), group = i18n.later("Entry"), keys = {{.Return, {}}}, icon = lucide.COPY, tags = {"paste", "clipboard"}},
-	.Copy_Plain      = {label = i18n.later("Copy as plain text"), group = i18n.later("Entry"), icon = lucide.TYPE, tags = {"text", "unformatted"}},
-	.Edit            = {label = i18n.later("Edit…"), group = i18n.later("Entry"), keys = {{.E, {.Ctrl}}}, icon = lucide.EDIT, tags = {"change", "modify"}},
-	.Open            = {label = i18n.later("Open"), group = i18n.later("Entry"), keys = {{.O, {.Ctrl}}}, icon = lucide.EXTERNAL_LINK, tags = {"launch", "browser"}},
-	.Save_As         = {label = i18n.later("Save as…"), group = i18n.later("Entry"), keys = {{.S, {.Ctrl}}}, icon = lucide.SAVE, tags = {"export", "file", "write"}},
-	.Pin             = {label = i18n.later("Pin or unpin"), group = i18n.later("Entry"), keys = {{.P, {.Ctrl}}}, icon = lucide.PIN, tags = {"favourite", "keep", "star"}},
-	.Remove          = {label = i18n.later("Remove"), group = i18n.later("Entry"), keys = {{.Delete, {.Shift}}}, icon = lucide.TRASH_2, tags = {"delete", "erase", "forget"}},
-	.Show_QR         = {label = i18n.later("Show as a QR code"), group = i18n.later("Entry"), keys = {{.Q, {.Ctrl, .Shift}}}, icon = lucide.QR_CODE, tags = {"phone", "scan", "share"}},
-	.Copy_Qr_Content = {label = i18n.later("Copy the QR code's content"), group = i18n.later("Entry"), icon = lucide.QR_CODE, tags = {"scan", "read", "link"}},
-	.Toggle_Markdown_Source = {label = i18n.later("Show the Markdown source or rendered"), group = i18n.later("Entry"), keys = {{.M, {.Ctrl, .Shift}}}, icon = lucide.FILE_CODE, tags = {"markdown", "source", "raw", "render"}},
-	.Copy_Image_Text = {label = i18n.later("Copy the text of the image"), group = i18n.later("Entry"), keys = {{.T, {.Ctrl, .Shift}}}, icon = lucide.FILE_TEXT, tags = {"ocr", "recognize", "read", "screenshot", "scan"}},
-	.Select_All      = {label = i18n.later("Select every entry shown"), group = i18n.later("Selection"), keys = {{.A, {.Ctrl, .Shift}}}, icon = lucide.LIST_CHECKS, tags = {"select all", "selection", "mark"}},
-	.Select_One      = {label = i18n.later("Keep the cursor's entry alone selected"), group = i18n.later("Selection"), icon = lucide.X, tags = {"clear", "selection", "unmark"}},
-	.Filter_All      = {label = i18n.later("Show every entry"), group = i18n.later("Filter"), icon = lucide.LIST},
-	.Filter_Text     = {label = i18n.later("Show text"), group = i18n.later("Filter"), icon = lucide.ALIGN_LEFT},
-	.Filter_Images   = {label = i18n.later("Show images"), group = i18n.later("Filter"), icon = lucide.IMAGE},
-	.Filter_Files    = {label = i18n.later("Show files"), group = i18n.later("Filter"), icon = lucide.FILES},
-	.Filter_Pinned   = {label = i18n.later("Show pinned entries"), group = i18n.later("Filter"), icon = lucide.PIN},
-	.Filter_Next     = {label = i18n.later("Next filter"), group = i18n.later("Filter"), keys = {{.Tab, {}}}, icon = lucide.FILTER},
-	.Filter_Previous = {label = i18n.later("Previous filter"), group = i18n.later("Filter"), keys = {{.Tab, {.Shift}}}, icon = lucide.FILTER},
-	.Clear_History   = {label = i18n.later("Clear the history (pinned entries stay)"), group = i18n.later("papier"), icon = lucide.TRASH_2, tags = {"wipe", "erase", "empty"}},
-	.Settings        = {label = i18n.later("Settings"), group = i18n.later("papier"), keys = {{.Comma, {.Ctrl}}}, icon = lucide.SETTINGS, tags = {"preferences", "options", "configure"}, scope = .Window},
-	.Check_Updates   = {label = i18n.later("Check for updates"), group = i18n.later("papier"), icon = lucide.REFRESH_CW, tags = {"upgrade", "version", "new"}},
-	.Shortcuts       = {label = i18n.later("Keyboard shortcuts"), group = i18n.later("papier"), keys = {{.F1, {}}}, icon = lucide.KEYBOARD, tags = {"help", "keys", "hotkeys"}, scope = .Window},
-	.Hide            = {label = i18n.later("Hide the window"), group = i18n.later("papier"), icon = lucide.X, tags = {"close", "dismiss"}, scope = .Window},
-	.Restart         = {label = i18n.later("Restart papier"), group = i18n.later("papier"), icon = lucide.ROTATE_CCW, tags = {"reload", "relaunch"}},
-	.Quit            = {label = i18n.later("Quit papier"), group = i18n.later("papier"), keys = {{.Q, {.Ctrl}}}, icon = lucide.POWER, tags = {"exit", "close", "stop"}, scope = .Window},
+	.Copy            = {id = "copy", label = i18n.later("Copy"), group = i18n.later("Entry"), keys = {{.Return, {}}}, icon = lucide.COPY, tags = {"paste", "clipboard"}},
+	.Copy_Plain      = {id = "copy_plain", label = i18n.later("Copy as plain text"), group = i18n.later("Entry"), icon = lucide.TYPE, tags = {"text", "unformatted"}},
+	.Edit            = {id = "edit", label = i18n.later("Edit…"), group = i18n.later("Entry"), keys = {{.E, {.Ctrl}}}, icon = lucide.EDIT, tags = {"change", "modify"}},
+	.Open            = {id = "open", label = i18n.later("Open"), group = i18n.later("Entry"), keys = {{.O, {.Ctrl}}}, icon = lucide.EXTERNAL_LINK, tags = {"launch", "browser"}},
+	.Save_As         = {id = "save_as", label = i18n.later("Save as…"), group = i18n.later("Entry"), keys = {{.S, {.Ctrl}}}, icon = lucide.SAVE, tags = {"export", "file", "write"}},
+	.Pin             = {id = "pin", label = i18n.later("Pin or unpin"), group = i18n.later("Entry"), keys = {{.P, {.Ctrl}}}, icon = lucide.PIN, tags = {"favourite", "keep", "star"}},
+	.Remove          = {id = "remove", label = i18n.later("Remove"), group = i18n.later("Entry"), keys = {{.Delete, {.Shift}}}, icon = lucide.TRASH_2, tags = {"delete", "erase", "forget"}},
+	.Show_QR         = {id = "show_qr", label = i18n.later("Show as a QR code"), group = i18n.later("Entry"), keys = {{.Q, {.Ctrl, .Shift}}}, icon = lucide.QR_CODE, tags = {"phone", "scan", "share"}},
+	.Copy_Qr_Content = {id = "copy_qr_content", label = i18n.later("Copy the QR code's content"), group = i18n.later("Entry"), icon = lucide.QR_CODE, tags = {"scan", "read", "link"}},
+	.Toggle_Markdown_Source = {id = "toggle_markdown_source", label = i18n.later("Show the Markdown source or rendered"), group = i18n.later("Entry"), keys = {{.M, {.Ctrl, .Shift}}}, icon = lucide.FILE_CODE, tags = {"markdown", "source", "raw", "render"}},
+	.Copy_Image_Text = {id = "copy_image_text", label = i18n.later("Copy the text of the image"), group = i18n.later("Entry"), keys = {{.T, {.Ctrl, .Shift}}}, icon = lucide.FILE_TEXT, tags = {"ocr", "recognize", "read", "screenshot", "scan"}},
+	.Select_All      = {id = "select_all", label = i18n.later("Select every entry shown"), group = i18n.later("Selection"), keys = {{.A, {.Ctrl, .Shift}}}, icon = lucide.LIST_CHECKS, tags = {"select all", "selection", "mark"}},
+	.Select_One      = {id = "select_one", label = i18n.later("Keep the cursor's entry alone selected"), group = i18n.later("Selection"), icon = lucide.X, tags = {"clear", "selection", "unmark"}},
+	.Filter_All      = {id = "filter_all", label = i18n.later("Show every entry"), group = i18n.later("Filter"), icon = lucide.LIST},
+	.Filter_Text     = {id = "filter_text", label = i18n.later("Show text"), group = i18n.later("Filter"), icon = lucide.ALIGN_LEFT},
+	.Filter_Images   = {id = "filter_images", label = i18n.later("Show images"), group = i18n.later("Filter"), icon = lucide.IMAGE},
+	.Filter_Files    = {id = "filter_files", label = i18n.later("Show files"), group = i18n.later("Filter"), icon = lucide.FILES},
+	.Filter_Pinned   = {id = "filter_pinned", label = i18n.later("Show pinned entries"), group = i18n.later("Filter"), icon = lucide.PIN},
+	.Filter_Next     = {id = "filter_next", label = i18n.later("Next filter"), group = i18n.later("Filter"), keys = {{.Tab, {}}}, icon = lucide.FILTER},
+	.Filter_Previous = {id = "filter_previous", label = i18n.later("Previous filter"), group = i18n.later("Filter"), keys = {{.Tab, {.Shift}}}, icon = lucide.FILTER},
+	.Clear_History   = {id = "clear_history", label = i18n.later("Clear the history (pinned entries stay)"), group = i18n.later("Papier"), icon = lucide.TRASH_2, tags = {"wipe", "erase", "empty"}},
+	.Settings        = {id = "settings", label = i18n.later("Settings"), group = i18n.later("Papier"), keys = {{.Comma, {.Ctrl}}}, icon = lucide.SETTINGS, tags = {"preferences", "options", "configure"}, scope = .Window},
+	.Check_Updates   = {id = "check_updates", label = i18n.later("Check for updates"), group = i18n.later("Papier"), icon = lucide.REFRESH_CW, tags = {"upgrade", "version", "new"}},
+	.Shortcuts       = {id = "shortcuts", label = i18n.later("Keyboard shortcuts"), group = i18n.later("Papier"), keys = {{.F1, {}}}, icon = lucide.KEYBOARD, tags = {"help", "keys", "hotkeys"}, scope = .Window},
+	.Hide            = {id = "hide", label = i18n.later("Hide the window"), group = i18n.later("Papier"), icon = lucide.X, tags = {"close", "dismiss"}, scope = .Window},
+	.Restart         = {id = "restart", label = i18n.later("Restart Papier"), group = i18n.later("Papier"), icon = lucide.ROTATE_CCW, tags = {"reload", "relaunch"}},
+	.Quit            = {id = "quit", label = i18n.later("Quit Papier"), group = i18n.later("Papier"), keys = {{.Q, {.Ctrl}}}, icon = lucide.POWER, tags = {"exit", "close", "stop"}, scope = .Window},
 }
 
 // The entries an action acts on: those selected in the list's order, else the cursor's (temp memory). Run when an
@@ -157,7 +157,7 @@ action_run :: proc(app: ^App, a: Action) {
 	case .Settings:      settings_toggle(app)
 	case .Check_Updates: update_check_asked(app)
 	// (the sheet adds the toolkit's palette command itself)
-	case .Shortcuts:     ui.shortcuts_sheet_open(&app.sheet, slice.enumerated_array(&ACTIONS), i18n.tr("papier's keys"))
+	case .Shortcuts:     ui.shortcuts_sheet_open(&app.sheet, slice.enumerated_array(&ACTIONS), i18n.tr("Papier's keys"))
 	case .Hide:          app_hide(app)
 	case .Restart:       app_restart(app, hidden = false)
 	case .Quit:          app.quit = true

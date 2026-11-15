@@ -328,7 +328,7 @@ views_open :: proc(app: ^App) -> bool {
 build_page :: proc(app: ^App, em: f32) {
 	build_title(app, em)
 	ui.hline(ui.fill())
-	crash_bar.bar(&app.crash_bar, {name = "papier", version = APP_VERSION, repository = "sachahjkl/papier"})
+	crash_bar.bar(&app.crash_bar, {name = APP_TITLE, version = APP_VERSION, repository = "sachahjkl/papier"})
 	ui.next({width = ui.fill(), height = ui.fill()})
 	if app.settings_open {
 		settings_build(app)
@@ -373,7 +373,7 @@ build_title :: proc(app: ^App, em: f32) {
 		if app.settings_open {
 			// the page has its own search: the title says where one is, its empty part moves the window
 			ui.next({width = ui.fill(), height = ui.pct(1)})
-			ui.label("papier###apptitle")
+			ui.label(APP_TITLE + "###apptitle")
 			if icon_action(app, "back", lucide.ARROW_LEFT, ui.key_tip(i18n.tr("Back to the history"), {.Escape, {}}), em) { app.settings_open = false }
 			ui.spacer(ui.px(em * 0.3))
 			// (the system's title bar has its own close button)

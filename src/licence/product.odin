@@ -7,7 +7,7 @@ import licence "gt:licence"
 
 PRODUCT :: licence.Product{
 	name           = "papier",
-	title          = "papier",
+	title          = "Papier",
 	version_tag    = "PAPIER1",
 	sign_context   = "papier-licence-v1\n",
 	file_extension = ".papierlicence",

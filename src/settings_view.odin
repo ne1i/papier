@@ -41,6 +41,7 @@ SETTINGS_PAGES := [?]prefs_page.Page_Info{
 	{category = "scrolling",  title = i18n.later("Scrolling"),        icon = lucide.MOUSE},
 	{category = "input",      title = i18n.later("Input"),            icon = lucide.KEYBOARD},
 	{category = "timing",     title = i18n.later("Delays and menus"), icon = lucide.TIMER},
+	{category = "keys",       title = i18n.later("Keys"),             icon = lucide.KEYBOARD},
 	{category = "update",     title = i18n.later("Updates"),          icon = lucide.DOWNLOAD},
 	{category = "rendering",  title = i18n.later("Rendering"),        icon = lucide.MONITOR},
 }
@@ -54,13 +55,15 @@ HOTKEY_PREFS := [?]string{"window.shortcut"}
 settings_problem :: proc(user: rawptr, name: string) -> string {
 	app := (^App)(user)
 	if name == prefs_page.SYSTEM_TITLE_PREF && app.settings.system_title && !platform.system_title_available(app.main.win) {
-		return i18n.tr("This desktop draws no title bar for papier's window (GNOME): papier keeps its own.")
+		return i18n.tr("This desktop draws no title bar for Papier's window (GNOME): Papier keeps its own.")
 	}
 	return name == "window.shortcut" ? app.shortcut_problem : ""
 }
 
 // The page, as large as the body.
 settings_build :: proc(app: ^App) {
+	// (the Installation page signs with the vendor's mark: made with the logo, once)
+	if !app.logo_made { setup_logo(app) }
 	ui.next({width = ui.fill(), height = ui.fill()})
 	prefs_page.build(&app.settings_page, &app.prefs, settings_options(app))
 }
@@ -74,7 +77,7 @@ settings_options :: proc(app: ^App) -> prefs_page.Page_Options {
 		updater = app.updater, restart = proc(user: rawptr) { app_restart((^App)(user), hidden = false) },
 		pages = SETTINGS_PAGES[:], icon_font = app.icons, search_icon = lucide.SEARCH, reset_icon = lucide.ROTATE_CCW,
 		file = app.prefs_path,
-		version = "papier " + APP_VERSION,
+		version = APP_TITLE + " " + APP_VERSION,
 		themes = app.themes_file.all[:], themes_light = app.theme_shown.light, themes_file = &app.themes_file,
 		changelog = &app.changelog, licence = &app.licence, install = &app.install, diagnostics = &app.main,
 	}

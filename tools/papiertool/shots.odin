@@ -96,9 +96,9 @@ run_shots :: proc(args: []string) -> cli.Exit {
 	shot(&c, out, "palette", &failed)
 	// a setting chosen: the settings, on it alone
 	cdp.key(&c, "Enter")
-	if !cdp.wait_for(&c, "The colours of papier's windows", SESSION_WAIT) { fmt.eprintln("papiertool shots: the palette's setting did not open the settings"); failed = true }
+	if !cdp.wait_for(&c, "The colours of Papier's windows", SESSION_WAIT) { fmt.eprintln("papiertool shots: the palette's setting did not open the settings"); failed = true }
 	cdp.key(&c, "ctrl+,")
-	cdp.wait_for(&c, "The colours of papier's windows", SESSION_WAIT, gone = true)
+	cdp.wait_for(&c, "The colours of Papier's windows", SESSION_WAIT, gone = true)
 	// the address as a QR code
 	cdp.type_text(&c, "github")
 	cdp.wait_for(&c, "proc fibonacci", SESSION_WAIT, gone = true)

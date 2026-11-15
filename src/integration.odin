@@ -19,7 +19,7 @@ ICON_PNGS := [?]desktop.Icon{
 
 papier_identity :: proc() -> desktop.Identity {
 	return desktop.Identity{
-		name = "Papier", key = "Papier", slug = APP_NAME,
+		name = APP_TITLE, key = "Papier", slug = APP_NAME,
 		description = "The clipboard's history: text, rich text, images and files, searched and put back in a keystroke.",
 		vendor = "Froment Software",
 		entry_marker = "X-Papier-Integration", registry_mark = "PapierIntegration", vendor_key = "FromentSoftware",

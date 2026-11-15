@@ -14,5 +14,5 @@ prefs_read_system :: proc(p: ^config.Prefs, s: ^Settings, allocator := context.a
 
 // The user's data folder: without history.persist here, a history in a temporary folder would go unasked.
 history_dir :: proc(persist: bool, allocator := context.temp_allocator) -> string {
-	return platform.user_dir(.Data, APP_NAME, allocator)
+	return platform.user_dir(.Data, APP_FOLDER, allocator)
 }

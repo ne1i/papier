@@ -24,8 +24,14 @@ data only (`src/actions.odin`).
 - **The palette's keys are the toolkit's command**, read by `ui.palette_keys` at the top of `window_keys`. Papier's
   table has no line for it, and a test says no action takes Ctrl+K or Ctrl+Shift+P. The sheet of the keys lists the
   command itself.
-- **One usage memory**: the toolkit's, in `palette_choices.txt` in the state folder, its keys `<source>:<id>`. Papier
-  kept none before: nothing to carry over.
+- **One usage memory**: the toolkit's, in `palette_choices.txt` in the state folder, its keys `<source>:<id>`. An
+  action's id is its `Command.id` (`clear_history`, the enum's name in lower case, written out): it never follows the
+  label or the language. The memory was keyed by the English label before the ids: it was lost once, accepted. A test
+  checks the ids (`ui.command_ids_check`).
+- **The person's keys and aliases are the toolkit's** (`ui.Keymap`, its intent in gui_toolkit's
+  `src/md/features/keymap.md`): one `app.keymap`, the actions' ids known before the first frame, the window reading it
+  (`ui.keymap_use`), `keys.custom` and `keys.aliases` read and written by `standard_watch`, shown on the Keys page.
+  Ctrl+Enter and Alt+Enter in the palette are the toolkit's.
 - **The settings source is added once** and asks for the page's options when it reads or acts, so the user's themes
   read again need nothing. A new registry of the preferences (a `papier set`, the file changed) bumps its version: a
   policy can fix other settings in it.

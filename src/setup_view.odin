@@ -14,15 +14,14 @@ package papier
 
 import desktop "gt:desktop"
 import i18n "gt:i18n"
-import "gt:platform"
 import prefs_page "gt:prefs_page"
-import "gt:render"
 import setup "gt:setup"
 
 // What the setup knows of papier.
 setup_options :: proc() -> setup.Setup_Options {
 	return setup.Setup_Options{
 		identity = papier_identity(), version = APP_VERSION, install_folder = APP_NAME, icons = ICON_PNGS[:],
+		vendor_url = "https://froment.software",
 		choices = SETUP_CHOICES[:], running = daemon_running, quit = daemon_quit,
 		prepare = proc(o: ^desktop.Integration_Options, choices: []bool, user: rawptr) {
 			papier_parts(o)
@@ -35,7 +34,7 @@ setup_options :: proc() -> setup.Setup_Options {
 @(private = "file")
 SETUP_CHOICES := [?]setup.Choice{
 	{label = i18n.later("Start with the session, in the notification area"), on = true},
-	{label = i18n.later("papier in the terminal (on the PATH)"), on = true},
+	{label = i18n.later("Papier in the terminal (on the PATH)"), on = true},
 }
 
 // Once the start's reading of the install came (prefs_page.install_offer): whether this is the installed copy, which
@@ -62,18 +61,26 @@ setup_build :: proc(app: ^App) {
 	if prefs_page.install_frame(&app.install) == .Launched { app.quit = true }   // (the installed copy starts at the end: app_run)
 }
 
-// The logo of the view, a texture of the window's renderer (made once, freed with the window).
-@(private = "file")
+// The logo of the view and the vendor's mark of its "By" line, textures of the window's renderer (made once, at the
+// view's first show or the settings' first build: the Installation page signs with the mark too; freed with the
+// window: setup_logo_destroy).
 setup_logo :: proc(app: ^App) {
 	app.logo_made = true
-	img, ok := platform.clipboard_image_decode("image/png", LOGO_PNG_LARGE, context.temp_allocator)
-	if !ok { return }
-	app.logo = render.create_texture_rgba(&app.shared.r, img.size.x, img.size.y)
-	render.update_texture_rgba(&app.shared.r, app.logo, 0, 0, img.size.x, img.size.y, img.rgba)
-	app.install.logo = setup.Logo{app.logo, {f32(LOGO_SIZE), f32(LOGO_SIZE)}}
+	if logo, ok := setup.logo_make(&app.shared.r, LOGO_PNG_LARGE, {f32(LOGO_SIZE), f32(LOGO_SIZE)}); ok { app.install.logo = logo }
+	if mark, ok := setup.logo_make(&app.shared.r, VENDOR_MARK_PNG, {16, 16}); ok { app.install.vendor_mark = mark }
 	// (a view already open draws with what setup.open got)
-	if app.install.dialog.open { app.install.dialog.logo = app.install.logo }
+	if app.install.dialog.open {
+		setup.set_logo(&app.install.dialog, app.install.logo)
+		setup.set_vendor_mark(&app.install.dialog, app.install.vendor_mark)
+	}
+}
+
+// Before the window's renderer goes.
+setup_logo_destroy :: proc(app: ^App) {
+	setup.logo_destroy(&app.shared.r, &app.install.logo)
+	setup.logo_destroy(&app.shared.r, &app.install.vendor_mark)
 }
 
 LOGO_SIZE :: 128
 LOGO_PNG_LARGE :: #load("../assets/logo_128.png")
+VENDOR_MARK_PNG :: #load("../assets/froment-software-64.png")

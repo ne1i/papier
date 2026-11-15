@@ -6,7 +6,7 @@ Every setting of papier is a preference: a name, a type, a default value and lim
 papier prefs
 ```
 
-Change one. Papier saves it in `$XDG_CONFIG_HOME/papier/prefs`, and the running papier reads it again at once:
+Change one. Papier saves it in `$XDG_CONFIG_HOME/FromentSoftware/Papier/prefs`, and the running papier reads it again at once:
 
 ```sh
 papier set history.max_entries 5000
@@ -23,14 +23,16 @@ imports back.
 The look (`appearance.*`: the theme, light or dark, the finish, the glow, the text size, the zoom, the density...), the
 text and fonts (`appearance.text.*`), the window (`window.system_title`, `window.toast_position`), the scrolling
 (`scrolling.*`), the input (`input.*`), the delays and menus (`timing.*`), the rendering (`rendering.*`), the updates
-(`update.auto`, `update.channel`, `update.base_url`) and the messages (`general.messages`, `general.language`) are the
+(`update.auto`, `update.channel`, `update.base_url`), the messages (`general.messages`, `general.language`) and your
+keys and aliases of the commands (`keys.custom`, `keys.aliases`: set from the command palette, Ctrl+Enter and
+Alt+Enter on a command) are the
 settings that every program of gui_toolkit has. Its
 [docs/settings.md](https://github.com/sachahjkl/gui_toolkit/blob/main/docs/settings.md) lists each with its default.
 Papier's defaults: the theme `Papier`, the text size 14 px, its own title bar (`window.system_title` off).
 
 `appearance.theme` is `Papier`, a theme of gui_toolkit by its name (Midnight, Graphite, Nord, Dracula, Gruvbox, Tokyo
 Night, Catppuccin, Rosé Pine, Kanagawa, One Dark, Solarized…), or one of your own: Settings > Appearance links to
-`$XDG_CONFIG_HOME/papier/themes.txt`, made with a commented guide at the first click and read again each time it is saved.
+`$XDG_CONFIG_HOME/FromentSoftware/Papier/themes.txt`, made with a commented guide at the first click and read again each time it is saved.
 
 `appearance.text.ui_font`, `appearance.text.mono_font` (the text of the entries) and `appearance.text.prose_font` (a
 Markdown entry's text) apply at once, in every window: gui_toolkit loads the family and swaps it in. Papier reads
@@ -56,8 +58,8 @@ On Windows, the system keeps the history (Settings > System > Clipboard): the `h
 | `capture.ignore_secrets` | boolean | true | Do not record what a password manager marks as secret (`x-kde-passwordManagerHint`). |
 | `capture.ignore_mimes` | text | empty | MIME types, separated by commas: a copy that offers one of them is not recorded. |
 | `clipboard.keep` | boolean | true | When the program that owned the clipboard quits and empties it, put the last entry back. |
-| `paste.on_select` | boolean | true | An entry chosen (Enter, a double click, Alt+1…9) is pasted into the program papier was called from: the window hides and papier presses `paste.keys` there. |
-| `paste.keys` | text | Ctrl+V | The keys papier presses to paste: Ctrl+V in most programs, Ctrl+Shift+V in a terminal, Shift+Insert in both on many systems. Ctrl, Shift, Alt, Win and a key, joined by `+`. |
+| `paste.on_select` | boolean | true | An entry chosen (Enter, a double click, Alt+1…9) is pasted into the program Papier was called from: the window hides and Papier presses `paste.keys` there. |
+| `paste.keys` | text | Ctrl+V | The keys Papier presses to paste: Ctrl+V in most programs, Ctrl+Shift+V in a terminal, Shift+Insert in both on many systems. Ctrl, Shift, Alt, Win and a key, joined by `+`. |
 | `window.close_on_copy` | boolean | true | Hide the window when an entry is copied. |
 | `window.width` | integer, 320 to 4000 | 900 | The width of the window at its first start, in logical pixels. |
 | `window.height` | integer, 240 to 4000 | 560 | The height of the window at its first start, in logical pixels. |

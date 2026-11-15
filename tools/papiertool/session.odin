@@ -36,7 +36,7 @@ session_start :: proc(s: ^Session, dir: string, port: int, prefs: []string = nil
 	s.dir = s.sway.dir
 	if len(prefs) > 0 {
 		// the preferences file: config's user layer (its first line, then name<TAB>value)
-		cfg := fmt.tprintf("%s/config/papier", s.dir)
+		cfg := fmt.tprintf("%s/config/FromentSoftware/Papier", s.dir)
 		if os.make_directory_all(cfg) != nil { return fmt.tprintf("%s cannot be made", cfg) }
 		b := strings.builder_make(context.temp_allocator)
 		strings.write_string(&b, "wbprefs 1\n")

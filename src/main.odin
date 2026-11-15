@@ -50,6 +50,9 @@ main :: proc() {
 }
 
 run :: proc(all_args: []string) -> cli.Exit {
+	// (before anything reads the folders: the settings, the history and the licence of an older papier move once into
+	// the vendor's folder; the log is not open yet, so a failure goes to the standard error)
+	if _, why := platform.user_dirs_move(APP_NAME, APP_FOLDER); why != "" { errf("papier: %s", why) }
 	prefs: config.Prefs
 	args, problems := prefs_open(&prefs, all_args)
 	defer config.prefs_destroy(&prefs)

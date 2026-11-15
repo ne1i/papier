@@ -12,7 +12,7 @@ VERSION_MARK :: "{{version}}"
 // Where the site is published, what it is: the one place that says it.
 SITE_META :: tk_site.Meta{
 	url         = "https://papier.froment.software/",
-	name        = "papier",
+	name        = "Papier",
 	repository  = REPOSITORY,
 	tagline     = "A fast clipboard history, searched as you type",
 	changes     = "CHANGELOG.md",
@@ -56,7 +56,7 @@ site_meta :: proc() -> tk_site.Meta {
 // the maintainer's to give once the shop is set up (docs/licence.md, "What the maintainer does at the end"): until the
 // client token, the price id and the Worker are there, the button says "Coming soon".
 SHOP :: tk_site.Shop{
-	name           = "papier",
+	name           = "Papier",
 	icon           = "../img/logo.png",
 	product_title  = "Papier User License",
 	price          = "15&nbsp;&euro;",
@@ -68,13 +68,13 @@ SHOP :: tk_site.Shop{
 	worker         = "https://papier-licence.sacha-42a.workers.dev",
 	thanks         = "https://papier.froment.software/thanks/",
 	help           = REPOSITORY + "/issues/new",
-	register       = "Open papier's settings (Ctrl+,), the <b>General</b> page, <b>Licence</b>: paste the key, or choose the file.",
+	register       = "Open Papier's settings (Ctrl+,), the <b>General</b> page, <b>Licence</b>: paste the key, or choose the file.",
 	extension      = ".papierlicence",
 	repository     = REPOSITORY,
 	seller         = SELLER,
 	code_licence   = "MIT License",
 	platform       = "Windows 10 or 11, x64, and Linux, x64 (Wayland).",
-	network        = "papier connects to the network for its updates only: the installed copy asks GitHub for the latest release a while after it starts and then once a day, and puts an update in place only if it is signed by Froment Software. Another copy asks only when you press <em>Check now</em> in the settings.",
+	network        = "Papier connects to the network for its updates only: the installed copy asks GitHub for the latest release a while after it starts and then once a day, and puts an update in place only if it is signed by Froment Software. Another copy asks only when you press <em>Check now</em> in the settings.",
 	stylesheet     = "../style.css",
 	home           = "../",
 	updated        = "2026-11-13",

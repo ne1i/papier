@@ -14,6 +14,14 @@ no_action_key_types_text :: proc(t: ^testing.T) {
 	testing.expectf(t, len(got) == 0, "keys that type text: %v", got)
 }
 
+// Each action's id is its name for good: the person's key and alias of it, and the palette's memory of it, are stored
+// by it. Every one is set, well formed and alone in the table.
+@(test)
+every_action_has_an_id :: proc(t: ^testing.T) {
+	got := ui.command_ids_check(slice.enumerated_array(&ACTIONS))
+	testing.expectf(t, len(got) == 0, "ids: %v", got)
+}
+
 // The keys, the settings, hide and quit are the window's: their keys work in the settings, the edit view and over a
 // dialog (window_keys). The live run opens the palette from the settings and from the edit view.
 @(test)

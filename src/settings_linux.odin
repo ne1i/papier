@@ -42,9 +42,11 @@ prefs_read_system :: proc(p: ^config.Prefs, s: ^Settings, allocator := context.a
 	s.keep = config.bool_of(p, "clipboard.keep")
 }
 
-// Where the history is: the user's data folder (persist), else the session's runtime folder, $XDG_RUNTIME_DIR/papier
-// (gone at logout). Without that variable the toolkit's runtime folder is the system's temporary one, shared by every
-// user: the store makes its folder the user's alone (history.open).
+// Where the history is: the user's data folder (persist, the vendor's folder), else the session's runtime folder,
+// $XDG_RUNTIME_DIR/papier (gone at logout; the runtime folder keeps the technical name). Without that variable the
+// toolkit's runtime folder is the system's temporary one, shared by every user: the store makes its folder the user's
+// alone (history.open).
 history_dir :: proc(persist: bool, allocator := context.temp_allocator) -> string {
-	return platform.user_dir(persist ? .Data : .Runtime, APP_NAME, allocator)
+	if persist { return platform.user_dir(.Data, APP_FOLDER, allocator) }
+	return platform.user_dir(.Runtime, APP_NAME, allocator)
 }

@@ -9,6 +9,7 @@ package papier
 
 import "core:fmt"
 import "core:log"
+import "core:slice"
 import "core:time"
 import cli "gt:cli"
 import config "gt:config"
@@ -104,6 +105,7 @@ App :: struct {
 	palette:    ui.Command_Palette, // Ctrl+K: the toolkit's, over the actions and the settings (actions.odin)
 	palette_state: Palette_State,   // what papier gives it
 	sheet:      ui.Shortcuts_Sheet, // F1: the sheet of the keys
+	keymap:     ui.Keymap,          // the person's keys and aliases (keys.custom, keys.aliases), set from the palette
 	qr:         Qr_View,            // an entry as a QR code (qr.odin)
 	menu:       Entry_Menu,         // the entry's menu (entry_menu.odin)
 	edit:       Edit,               // the edit view (edit.odin)
@@ -114,8 +116,7 @@ App :: struct {
 	install:    prefs_page.Install, // the install: its offer, its dialog, the settings' page (setup_view.odin)
 	changelog:  prefs_page.Changelog, // What's new: CHANGELOG.md on a page of the settings, said once after an update
 	setup_known: bool,              // the start's reading of the install came (setup_follow)
-	logo:       render.Texture,     // the install dialog's logo (made at its first show)
-	logo_made:  bool,
+	logo_made:  bool,               // the install's logo and vendor mark are made (setup_logo; kept in `install`)
 	launch_after: string,           // this program again after an update, started once this one has ended (owned; "": none)
 	launch_hidden: bool,            // and in the notification area (an update: updates.odin)
 	updater:    ^update.Updater,    // updates.odin
@@ -132,13 +133,14 @@ App :: struct {
 app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup_asked := false) -> cli.Exit {
 	// (the running papier's errors go to its log, written by a thread of its own; echoed on the standard error for a
 	// terminal and the live tests)
-	logger := tk_log.install({program = APP_NAME, echo = true})
+	// (the file keeps the technical name; its folder is the vendor's)
+	logger := tk_log.install({program = APP_NAME, dir = tk_log.default_dir(APP_FOLDER, context.temp_allocator), echo = true})
 	context.logger = logger
 	defer {
 		context.logger = log.nil_logger()
 		tk_log.close(logger)
 	}
-	crash.install({program = APP_NAME, version = APP_VERSION, log_tail = {tk_log.tail, logger.data}})
+	crash.install({program = APP_NAME, report_dir = crash.default_report_dir(APP_FOLDER, context.temp_allocator), version = APP_VERSION, log_tail = {tk_log.tail, logger.data}})
 	// (files read and written here, before the window exists)
 	crash.begin_session()
 	defer crash.end_session()   // (each return of this procedure is a clean end)
@@ -164,7 +166,7 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 
 	platform.set_app_id(APP_NAME)
 	platform.dragdrop_thread_init()   // (Windows: OLE, for an entry dragged out: drag.odin)
-	if !host.host_open(&app.main, &app.shared, {title = "papier", size = app.settings.size, integrated_title = !app.settings.system_title}, view_build, app) {
+	if !host.host_open(&app.main, &app.shared, {title = APP_TITLE, size = app.settings.size, integrated_title = !app.settings.system_title}, view_build, app) {
 		log.error("papier: no window")
 		return .Failed
 	}
@@ -174,6 +176,10 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	ui.views_init(&app.views, {path = views_path()})
 	ui.set_views(&h.state, &app.views)
 	ui.views_set_windows(&app.views, host.view_windows(h.shared))
+	// (the actions' ids known before the first command_pressed: else a person's key would not act in the first frames;
+	// standard_watch reads keys.custom and keys.aliases into the keymap below)
+	ui.keymap_known(&app.keymap, slice.enumerated_array(&ACTIONS))
+	ui.keymap_use(&h.state, &app.keymap)
 	qr_register(app)
 	// (a message said between two builds, a task's result, shows in this window's state)
 	app.announcer = {mode = app.settings.messages, window = win, state = &h.state}
@@ -217,7 +223,7 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	}, app)
 	// (the settings source points at the page's options: the updater and the install are made now)
 	palette_init(app)
-	app.tray = platform.tray_create(win, LOGO_PNG, "papier")
+	app.tray = platform.tray_create(win, LOGO_PNG, APP_TITLE)
 	app_tray_menu(app)
 
 	// (hidden at start: the window is made and never shown, it has had no frame: nothing to take off the screen)
@@ -258,7 +264,7 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	devtools.stop(app.devtools)
 	view_clear(app)
 	thumbs_destroy(app)
-	if app.logo_made { render.destroy_texture(&app.shared.r, app.logo) }
+	setup_logo_destroy(app)
 	// (a Save as dialog's answer comes to the window's state: the chores end before it does)
 	ui.chores_stop()
 	prefs_page.install_end(&app.install)   // (its thread waited for, before the window's State goes)
@@ -306,6 +312,7 @@ app_free :: proc(app: ^App) {
 	delete(app.shortcut_problem)
 	settings_free(&app.settings)
 	prefs_page.standard_unwatch(&app.standard)
+	ui.keymap_destroy(&app.keymap)   // (after standard_unwatch: its changes no longer reach the keymap)
 	config.user_writer_stop(&app.prefs_writer, &app.prefs)   // (the last change written)
 	prefs_page.placement_keeper_destroy(&app.placement)
 	config.prefs_destroy(&app.prefs)
@@ -316,7 +323,7 @@ app_free :: proc(app: ^App) {
 // to load and apply, live).
 @(private = "file")
 app_standard_targets :: proc(app: ^App) -> prefs_page.Standard_Targets {
-	return {renderer = &app.shared.r, fonts = &app.shared.fonts, partial_redraw = &app.main.partial_redraw, pacer = &app.main.pacer, faces = #partial [ui.Text_Face]font.Font_Id{.Mono = app.mono}}
+	return {renderer = &app.shared.r, fonts = &app.shared.fonts, partial_redraw = &app.main.partial_redraw, pacer = &app.main.pacer, faces = #partial [ui.Text_Face]font.Font_Id{.Mono = app.mono}, keymap = &app.keymap}
 }
 
 // papier's own faces, and the emoji file the user named (read at the start). Found before the window's loop: the
@@ -666,7 +673,7 @@ app_tray_menu :: proc(app: ^App) {
 		{id = int(Tray_Item.Show), text = i18n.tr("Show the history"), default = true},
 		{kind = .Separator},
 		{id = int(Tray_Item.Clear), text = i18n.tr("Clear the history (pinned entries stay)")},
-		{id = int(Tray_Item.Quit), text = i18n.tr("Quit papier")},
+		{id = int(Tray_Item.Quit), text = i18n.tr("Quit Papier")},
 	})
 }
 
