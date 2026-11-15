@@ -3,6 +3,15 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.29.0] - 2026-11-15 21:01
+
+### Added
+- **By Froment Software in the setup**: the install's dialog and the settings' Installation page say who makes Papier, with its mark; the name opens froment.software.
+- **Your own keys and aliases for any command**: in the command palette (Ctrl+K), Ctrl+Enter on a command records a key for it, one key or two in a row (Ctrl+M, then T). Alt+Enter makes the letters typed an alias of the command: typed whole, the alias puts the command first. The menus, the tooltips and the sheet of the keys (F1) show your keys. Settings > Keys holds them, where a reset removes them.
+
+### Changed
+- **Papier's name capitalised, and its files in the vendor's folder**: the window, the tray, the menus and the settings say "Papier". The settings, the history, the logs and the licence are now in `FromentSoftware/Papier` (`~/.config/FromentSoftware/Papier`, `~/.local/share/FromentSoftware/Papier`...): the first start moves the old `papier` folders there once. The palette forgets once which commands you chose most often.
+
 ## [0.28.0] - 2026-11-15 17:35
 
 ### Added
@@ -477,6 +486,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.29.0]: https://github.com/sachahjkl/papier/releases/tag/v0.29.0
 [0.28.0]: https://github.com/sachahjkl/papier/releases/tag/v0.28.0
 [0.27.0]: https://github.com/sachahjkl/papier/releases/tag/v0.27.0
 [0.26.0]: https://github.com/sachahjkl/papier/releases/tag/v0.26.0
