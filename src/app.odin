@@ -306,7 +306,7 @@ app_free :: proc(app: ^App) {
 // to load and apply, live).
 @(private = "file")
 app_standard_targets :: proc(app: ^App) -> prefs_page.Standard_Targets {
-	return {renderer = &app.shared.r, fonts = &app.shared.fonts, partial_redraw = &app.main.partial_redraw, faces = #partial [ui.Text_Face]font.Font_Id{.Mono = app.mono}}
+	return {renderer = &app.shared.r, fonts = &app.shared.fonts, partial_redraw = &app.main.partial_redraw, pacer = &app.main.pacer, faces = #partial [ui.Text_Face]font.Font_Id{.Mono = app.mono}}
 }
 
 // papier's own faces, and the emoji file the user named (read at the start). Found before the window's loop: the
