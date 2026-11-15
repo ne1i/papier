@@ -88,6 +88,7 @@ prefs_open :: proc(p: ^config.Prefs, args: []string, descriptions := context.all
 	prefs_page.standard_register(p, prefs_page.STANDARD_ALL, standard_defaults(), descriptions)
 	config.register(p, PREF_DEFS[:])
 	config.register(p, PREF_DEFS_SYSTEM[:])
+	prefs_page.changelog_register(p)   // (the version last started: What's new after an update)
 	_, file_problems := config.load_file(p, prefs_file(), .User)
 	rest, problems = config.apply_args(p, args, context.temp_allocator)
 	append(&problems, ..file_problems[:])

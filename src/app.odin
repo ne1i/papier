@@ -111,6 +111,7 @@ App :: struct {
 	sel_rect:   ui.Rect,            // the selected row, as last built (where the Menu key opens the menu)
 	room:       f32,                // the page's width at this build (the window's, but what views docked at a side take), logical pixels
 	install:    prefs_page.Install, // the install: its offer, its dialog, the settings' page (setup_view.odin)
+	changelog:  prefs_page.Changelog, // What's new: CHANGELOG.md on a page of the settings, said once after an update
 	setup_known: bool,              // the start's reading of the install came (setup_follow)
 	logo:       render.Texture,     // the install dialog's logo (made at its first show)
 	logo_made:  bool,
@@ -206,6 +207,13 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	app_updates_start(app)
 	// (the install read on a task: setup_follow; offered on Windows, at a start that shows the window)
 	prefs_page.install_offer(&app.install, &h.state, offer = ODIN_OS == .Windows && !hidden && !setup_asked)
+	// (after an update, once: a message that stays opens the settings at What's new)
+	app.changelog.english = CHANGELOG
+	prefs_page.changelog_after_update(&app.changelog, &app.prefs, APP_VERSION, &app.announcer, proc(user: rawptr) {
+		app := (^App)(user)
+		app.settings_open = true
+		prefs_page.show(&app.settings_page, &app.prefs, settings_options(app), prefs_page.CHANGELOG_PAGE)
+	}, app)
 	// (the settings source points at the page's options: the updater and the install are made now)
 	palette_init(app)
 	app.tray = platform.tray_create(win, LOGO_PNG, "papier")
@@ -253,6 +261,7 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	// (a Save as dialog's answer comes to the window's state: the chores end before it does)
 	ui.chores_stop()
 	prefs_page.install_end(&app.install)   // (its thread waited for, before the window's State goes)
+	prefs_page.changelog_destroy(&app.changelog)
 	crash_bar.destroy(&app.crash_bar)
 	// (after the last build, while the window's State is there: which views were open is written, their windows close)
 	ui.views_destroy(&app.views)
