@@ -109,11 +109,11 @@ watcher_drain :: proc(wt: ^Watcher) {
 	}
 }
 
-// A command from another process (the instance socket), on this thread.
-@(private = "file")
+// A command from another process (the instance socket), on this thread. What the window must do (quit) goes to it
+// through watcher_request: the window's state is never touched here.
 watcher_message :: proc(user: rawptr, message: []byte) {
 	wt := (^Watcher)(user)
-	if c, ok := command_parse(string(message)); ok { watcher_apply(wt, c) }
+	if c, ok := command_received(message); ok { watcher_apply(wt, c) }
 }
 
 @(private = "file")

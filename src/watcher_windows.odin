@@ -93,11 +93,11 @@ watcher_refresh :: proc(wt: ^Watcher) {
 	if changed { watcher_changed(wt) }
 }
 
-// A command from another process (the instance's window), on this thread.
-@(private = "file")
+// A command from another process (the instance's window), on this thread. What the window must do (quit) goes to it
+// through watcher_request: the window's state is never touched here.
 watcher_message :: proc(user: rawptr, message: []byte) {
 	wt := (^Watcher)(user)
-	if c, ok := command_parse(string(message)); ok { watcher_apply(wt, c) }
+	if c, ok := command_received(message); ok { watcher_apply(wt, c) }
 }
 
 @(private = "file")

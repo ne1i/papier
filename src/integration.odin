@@ -7,6 +7,7 @@ package papier
 
 import desktop "gt:desktop"
 import "core:os"
+import instance "gt:instance"
 
 ICON_PNGS := [?]desktop.Icon{
 	{16, #load("../assets/logo_16.png")},
@@ -41,3 +42,8 @@ papier_parts :: proc(o: ^desktop.Integration_Options) {
 
 // Whether a papier runs and answers.
 daemon_running :: proc() -> bool { return command_send({verb = .Ping}) }
+
+// The running papier asked to end as its Quit does (setup's --quit: an installer replaces it). True when it took it.
+daemon_quit :: proc() -> bool {
+	return instance.send({name = DAEMON_NAME, wait_ms = 2000}, transmute([]u8)string(instance.MESSAGE_QUIT)) == .Forwarded
+}

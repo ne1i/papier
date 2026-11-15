@@ -638,7 +638,6 @@ app_job_done :: proc(app: ^App, d: ^Job_Done) {
 }
 
 // What the watcher asked for.
-@(private = "file")
 app_requests :: proc(app: ^App) {
 	// (in the order they came: a hide then a show ends shown, whatever came between two steps of the loop)
 	for r in watcher_take_requests(&app.watcher) {

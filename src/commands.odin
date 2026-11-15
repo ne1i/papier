@@ -11,7 +11,8 @@ import instance "gt:instance"
 Verb :: enum u8 { Ping, Show, Hide, Toggle, Quit, Copy, Pin, Unpin, Delete, Clear, Reload, Copy_Plain, Add_Text, Replace_Text, Refresh, Setup }
 
 COMMAND_NAMES := [Verb]string{
-	.Ping = "ping", .Show = "show", .Hide = "hide", .Toggle = "toggle", .Quit = "quit",
+	// (ping is the toolkit's: every program's single instance answers it the same way)
+	.Ping = instance.MESSAGE_PING, .Show = "show", .Hide = "hide", .Toggle = "toggle", .Quit = "quit",
 	.Copy = "copy", .Pin = "pin", .Unpin = "unpin", .Delete = "delete", .Clear = "clear", .Reload = "reload",
 	.Copy_Plain = "copy-plain", .Add_Text = "add-text", .Replace_Text = "replace-text", .Refresh = "refresh", .Setup = "setup",
 }
@@ -56,6 +57,13 @@ command_parse :: proc(text: string) -> (c: Command, ok: bool) {
 		return c, true
 	}
 	return
+}
+
+// A message of another process, as a command: papier's own lines, and the toolkit's quit (an installer's --quit sends
+// it without knowing papier's verbs).
+command_received :: proc(message: []byte) -> (c: Command, ok: bool) {
+	if string(message) == instance.MESSAGE_QUIT { return {verb = .Quit}, true }
+	return command_parse(string(message))
 }
 
 SEND_WAIT_MS :: 1000

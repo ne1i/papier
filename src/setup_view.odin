@@ -23,7 +23,7 @@ import setup "gt:setup"
 setup_options :: proc() -> setup.Setup_Options {
 	return setup.Setup_Options{
 		identity = papier_identity(), version = APP_VERSION, install_folder = APP_NAME, icons = ICON_PNGS[:],
-		choices = SETUP_CHOICES[:], running = daemon_running,
+		choices = SETUP_CHOICES[:], running = daemon_running, quit = daemon_quit,
 		prepare = proc(o: ^desktop.Integration_Options, choices: []bool, user: rawptr) {
 			papier_parts(o)
 			if len(choices) == len(SETUP_CHOICES) { o.autostart, o.add_to_path = choices[0], choices[1] }

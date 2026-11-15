@@ -88,7 +88,7 @@ run :: proc(all_args: []string) -> cli.Exit {
 @(private = "file")
 start :: proc(prefs: ^config.Prefs, verb: string) -> cli.Exit {
 	hidden := verb == "--hidden"
-	message := hidden ? "ping" : verb == "toggle" ? "toggle" : verb == "--setup" ? "setup" : "show"
+	message := hidden ? instance.MESSAGE_PING : verb == "toggle" ? "toggle" : verb == "--setup" ? "setup" : "show"
 	// (Wayland: the launcher's token goes with it, so the running papier's window gets the keyboard)
 	if token := platform.activation_token_from_env(context.temp_allocator); token != "" && !hidden && !strings.contains_any(token, " \n") {
 		message = fmt.tprintf("%s %s", message, token)
