@@ -3,6 +3,11 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.28.0] - 2026-11-15 17:35
+
+### Added
+- **papier --quit.** An installer (atelier, a script) asks the running papier to end before it replaces it: `papier --quit` closes it as its Quit does and waits for it; `papier --status` says `quit: yes`.
+
 ## [0.27.0] - 2026-11-15 16:47
 
 ### Added
@@ -472,6 +477,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.28.0]: https://github.com/sachahjkl/papier/releases/tag/v0.28.0
 [0.27.0]: https://github.com/sachahjkl/papier/releases/tag/v0.27.0
 [0.26.0]: https://github.com/sachahjkl/papier/releases/tag/v0.26.0
 [0.25.0]: https://github.com/sachahjkl/papier/releases/tag/v0.25.0
