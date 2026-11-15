@@ -74,7 +74,8 @@ App :: struct {
 	visible:    bool,
 	hide_due:   bool,               // app_hide was asked: the window goes after this frame
 	quit:       bool,
-	place:      Window_State,
+	remembered: Window_State,       // the list's width (state.odin)
+	placement:  prefs_page.Placement_Keeper,   // the window's place, the toolkit's window.placement
 
 	// the history, as the reader reads it (the watcher writes it): the window's thread touches no file (reader.odin)
 	reader:     Reader,
@@ -156,13 +157,12 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	// (no file read here: the user's themes come at the first builds, read by a task)
 	prefs_page.themes_file_init(&app.themes_file, themes_file(), themes())
 	// (read here, on this thread, before the window exists: they size it; from now on the reader does the files)
-	app.place = state_load()
+	app.remembered = state_load()
 	app.ids_version = 1   // (0 would tell the list to compare the ids)
 
 	platform.set_app_id(APP_NAME)
 	platform.dragdrop_thread_init()   // (Windows: OLE, for an entry dragged out: drag.odin)
-	size := app.place.size != {} ? app.place.size : app.settings.size
-	if !host.host_open(&app.main, &app.shared, {title = "papier", size = size, integrated_title = !app.settings.system_title}, view_build, app) {
+	if !host.host_open(&app.main, &app.shared, {title = "papier", size = app.settings.size, integrated_title = !app.settings.system_title}, view_build, app) {
 		log.error("papier: no window")
 		return 1
 	}
@@ -190,11 +190,8 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	h.close_asked = proc(h: ^host.Host) { app_hide((^App)(h.user)) }
 	app.devtools = devtools.start_from_env(win, "papier")
 	h.before_input = proc(h: ^host.Host) { app := (^App)(h.user); devtools.service(app.devtools, &h.state, &app.shared.r) }
-	if app.place.placed {
-		p := platform.get_placement(win)
-		p.rect[0], p.rect[1] = app.place.place.x, app.place.place.y
-		platform.set_placement(win, p)
-	}
+	// (the window where it was, at its size: the toolkit's window.placement; Wayland places it itself)
+	prefs_page.placement_restore(&app.placement, &app.prefs, win)
 
 	// (the reader opens the history on its thread: the first list comes as a view, or why it cannot be opened)
 	reader_start(&app.reader, win, history_dir(app.settings.persist))
@@ -230,6 +227,8 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 		app_paste_follow(app)
 		app_tray(app)
 		app_updates_follow(app)
+		// (the window's place kept as it moves, while it is shown: hidden, it is where it was left)
+		if app.visible { prefs_page.placement_track(&app.placement, &app.prefs, win, ui.now_ms()) }
 		config.user_writer_save(&app.prefs_writer, &app.prefs)
 		if config.user_writer_failed(&app.prefs_writer) { say(app, i18n.tr("The preferences cannot be written")) }
 		if app_follow_reader(app) { app.main.settle = max(app.main.settle, FRAMES_AFTER_INPUT) }
@@ -298,6 +297,7 @@ app_free :: proc(app: ^App) {
 	settings_free(&app.settings)
 	prefs_page.standard_unwatch(&app.standard)
 	config.user_writer_stop(&app.prefs_writer, &app.prefs)   // (the last change written)
+	prefs_page.placement_keeper_destroy(&app.placement)
 	config.prefs_destroy(&app.prefs)
 }
 
@@ -513,18 +513,13 @@ app_hide_now :: proc(app: ^App) {
 	view_clear(app)   // (its texture is the GPU's memory, for an entry that may be gone at the next show)
 }
 
-// What the window remembers (state.odin): its size, its place on X11, the list's width.
+// What the window remembers: its place and size (the toolkit's window.placement, written with the preferences), the
+// list's width (state.odin).
 @(private = "file")
 app_remember :: proc(app: ^App) {
 	win := app.main.win
 	if win == nil || !platform.is_window_visible(win) { return }
-	s := win.dpi_scale > 0 ? win.dpi_scale : 1
-	app.place.size = {int(f32(win.size.x) / s + 0.5), int(f32(win.size.y) / s + 0.5)}
-	// (Wayland places windows itself; X11 and Windows let the program)
-	if ODIN_OS == .Windows || platform.native_surface_handles(win).backend == .X11 {
-		p := platform.get_placement(win)
-		app.place.place, app.place.placed = {p.rect[0], p.rect[1]}, true
-	}
+	prefs_page.placement_keep(&app.placement, &app.prefs, win)
 	state_write(app)
 }
 

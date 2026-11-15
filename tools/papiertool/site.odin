@@ -96,5 +96,5 @@ SELLER :: tk_site.Seller{
 
 // The site's command: the toolkit's, the shop's pages among the others (Meta.shop).
 site_command :: proc() -> toolbox.Command {
-	return tk_site.command({meta = site_meta(), pages = {version_mark = VERSION_MARK, downloads = SITE_DOWNLOADS[:]}})
+	return tk_site.command({meta = site_meta(), pages = {version_mark = VERSION_MARK, downloads = SITE_DOWNLOADS[:]}, images = tk_site.images_default()})
 }

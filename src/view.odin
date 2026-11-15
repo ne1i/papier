@@ -461,12 +461,12 @@ grip_draw :: proc(b: ^ui.Box, user: rawptr, dc: ^draw.Context) {
 build_body :: proc(app: ^App, em: f32) {
 	scale := ui.scale()
 	room := app.room   // the window's width, logical pixels
-	if app.place.split <= 0 { app.place.split = max(room * LIST_SHARE, LIST_MIN_PX) }
-	app.place.split = clamp(app.place.split, LIST_MIN_PX, max(room - VIEW_MIN_PX, LIST_MIN_PX))   // (a window made narrower)
-	ui.next({width = ui.px(app.place.split * scale), height = ui.fill()})
+	if app.remembered.split <= 0 { app.remembered.split = max(room * LIST_SHARE, LIST_MIN_PX) }
+	app.remembered.split = clamp(app.remembered.split, LIST_MIN_PX, max(room - VIEW_MIN_PX, LIST_MIN_PX))   // (a window made narrower)
+	ui.next({width = ui.px(app.remembered.split * scale), height = ui.fill()})
 	build_list(app, em)
 	// (flush: the list and the entry's pane meet at its rule, whose lines join theirs; it is grabbed wider than it is drawn)
-	ui.splitter("###split", .X, &app.place.split, LIST_MIN_PX, max(room - VIEW_MIN_PX, LIST_MIN_PX),
+	ui.splitter("###split", .X, &app.remembered.split, LIST_MIN_PX, max(room - VIEW_MIN_PX, LIST_MIN_PX),
 		{default_size = room * LIST_SHARE, total = room, min_other = VIEW_MIN_PX, flush = true})
 	ui.next({width = ui.fill(), height = ui.fill()})
 	build_view(app, em)
@@ -818,7 +818,7 @@ build_markdown :: proc(app: ^App, l: ^Loaded_Entry, em: f32) {
 				// (this frame's room, from the window: the box's own width is the last frame's; the pane less its sides
 				// and the scroll bar)
 				u := ui.frame_new(Markdown_User)
-				u^ = {app = app, loaded = l, width = (app.room - app.place.split) * ui.scale() - em * 2.6}
+				u^ = {app = app, loaded = l, width = (app.room - app.remembered.split) * ui.scale() - em * 2.6}
 				// (prose and mono 0: the families the user chose, else papier's: the toolkit's text faces)
 				u.cfg = markdown.View_Options{user = u, link = markdown_link}
 				cfg := u.cfg
