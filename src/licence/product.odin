@@ -12,7 +12,7 @@ PRODUCT :: licence.Product{
 	sign_context   = "papier-licence-v1\n",
 	file_extension = ".papierlicence",
 	// (`papiertool licence keygen` makes the pair; empty until then: no licence of the real key is accepted)
-	public_key     = "",
+	public_key     = "s67_MOVX2AnUb4R11Q8IgT1JtLa9F3POujv3fwwSvGQ",
 	// (the development pair: its seed is public on purpose, papiertool's dev_seed)
 	dev_public_key = "AxUmDVadQ3OHFyeMIrDczTTo63rdjtn3zgMJ6a6QyU0",
 	editions       = {0 = {id = "supporter", title = "Supporter"}},
