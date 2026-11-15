@@ -3,6 +3,12 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.24.0] - 2026-11-15
+
+### Changed
+- **The window comes back maximized, and in its place on Windows.** papier remembers its window with the toolkit's placement: its size, its place where the system lets a program set it, and whether it was maximized. The size and place from an older papier are not read again: the window opens once at the default size.
+- **papier's folders are the toolkit's standard ones.** On Linux, with `history.persist` off and no session runtime folder (`$XDG_RUNTIME_DIR`), the history now goes in the temporary folder (`$TMPDIR/papier`, else `/tmp/papier`) instead of the data folder, where it outlived the session. The history's folder is readable by you alone. On Windows an entry opened as a file is written to `%TEMP%\papier\open` instead of `%TEMP%\papier-open`.
+
 ## [0.23.2] - 2026-11-15
 
 ### Fixed
@@ -450,6 +456,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.24.0]: https://github.com/sachahjkl/papier/releases/tag/v0.24.0
 [0.23.2]: https://github.com/sachahjkl/papier/releases/tag/v0.23.2
 [0.23.1]: https://github.com/sachahjkl/papier/releases/tag/v0.23.1
 [0.23.0]: https://github.com/sachahjkl/papier/releases/tag/v0.23.0
