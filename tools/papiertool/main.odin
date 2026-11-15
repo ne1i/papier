@@ -31,7 +31,7 @@ project :: proc() -> toolbox.Project {
 		publisher = "Froment Software", copyright = "Copyright (c) 2026 sachahjkl",
 		// (live and shots drive the release build over CDP: Devtools; only the icons papier names: Lucide_Subset; a
 		// ```mermaid block of a Markdown entry drawn: Mermaid)
-		features = {.Mermaid, .Devtools, .Lucide_Subset},
+		features = {.Mermaid, .Devtools, .Lucide_Subset, .Webp},
 	}
 }
 
