@@ -6,6 +6,7 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 import changelog "gt:changelog"
+import cli "gt:cli"
 import toolbox "gt:toolbox"
 
 // The packages that have tests (this tool has none of its own: its steps are gui_toolkit's, tested there; check still
@@ -40,10 +41,10 @@ build_parts :: proc(p: toolbox.Project) -> bool {
 	return toolbox.build_native(p) && build_sqlite()
 }
 
-run_build :: proc(args: []string) -> int {
+run_build :: proc(args: []string) -> cli.Exit {
 	p := project()
 	release := len(args) > 0 && args[0] == "release"
-	if !build_parts(p) { return 1 }
+	if !build_parts(p) { return .Failed }
 	_ = os.make_directory("build")
 	mode := release ? []string{"-o:speed"} : []string{"-debug"}
 	extra := make([dynamic]string, context.temp_allocator)
@@ -53,40 +54,40 @@ run_build :: proc(args: []string) -> int {
 	when ODIN_OS == .Windows {
 		if release { append(&extra, "-subsystem:windows") }
 	}
-	if !toolbox.run(toolbox.odin_command(p, "build", "", extra[:]), {echo = true}) { return 1 }
+	if !toolbox.run(toolbox.odin_command(p, "build", "", extra[:]), {echo = true}) { return .Failed }
 	fmt.printfln("built %s", PROGRAM)
-	return 0
+	return .Done
 }
 
-run_test :: proc(args: []string) -> int {
+run_test :: proc(args: []string) -> cli.Exit {
 	p := project()
-	if !build_parts(p) { return 1 }
+	if !build_parts(p) { return .Failed }
 	_ = os.make_directory("build")
 	for pkg in TEST_PACKAGES {
 		name, _ := strings.replace_all(pkg, "/", "_", context.temp_allocator)
 		out := fmt.tprintf("-out:build/test_%s%s", name, ODIN_OS == .Windows ? ".exe" : "")
-		if !toolbox.run(toolbox.odin_command(p, "test", pkg, {out}), {echo = true}) { return 1 }
+		if !toolbox.run(toolbox.odin_command(p, "test", pkg, {out}), {echo = true}) { return .Failed }
 	}
-	return 0
+	return .Done
 }
 
-run_check :: proc(args: []string) -> int {
+run_check :: proc(args: []string) -> cli.Exit {
 	p := project()
-	if !changelog_check(p) { return 1 }
-	if !toolbox.check_scopes("src") { return 1 }
+	if !changelog_check(p) { return .Failed }
+	if !toolbox.check_scopes("src") { return .Failed }
 	// (a text of the code not in the catalogue, or not translated, shows in English to a French user)
-	if problem := toolbox.i18n_catalogue(I18N.dirs, "i18n/fr.txt", "fr", true); problem != "" { fmt.eprintln(problem); return 1 }
-	if !toolbox.run(toolbox.odin_command(p, "check"), {echo = true}) { return 1 }
+	if problem := toolbox.i18n_catalogue(I18N.dirs, "i18n/fr.txt", "fr", true); problem != "" { fmt.eprintln(problem); return .Failed }
+	if !toolbox.run(toolbox.odin_command(p, "check"), {echo = true}) { return .Failed }
 	// (the whole program for Windows and macOS too, from any system: code of another system that does not compile fails
 	// the Linux job)
 	when ODIN_OS != .Windows {
-		if !toolbox.check_windows(p) { return 1 }
-		if !toolbox.check_darwin(p) { return 1 }
+		if !toolbox.check_windows(p) { return .Failed }
+		if !toolbox.check_darwin(p) { return .Failed }
 	}
-	if !toolbox.run({"odin", "check", "tools/papiertool", fmt.tprintf("-collection:gt=%s/src", toolbox.toolkit_dir(p)), "-vet"}, {echo = true}) { return 1 }
-	if run_test(nil) != 0 { return 1 }
-	if run_build({"release"}) != 0 { return 1 }
-	return toolbox.check_launcher(p) ? 0 : 1
+	if !toolbox.run({"odin", "check", "tools/papiertool", fmt.tprintf("-collection:gt=%s/src", toolbox.toolkit_dir(p)), "-vet"}, {echo = true}) { return .Failed }
+	if run_test(nil) != .Done { return .Failed }
+	if run_build({"release"}) != .Done { return .Failed }
+	return toolbox.ended(toolbox.check_launcher(p))
 }
 
 // The fragments of changelog.d/, as `changelog check` says them.

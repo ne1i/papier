@@ -10,6 +10,7 @@ package papier
 import "core:fmt"
 import "core:log"
 import "core:time"
+import cli "gt:cli"
 import config "gt:config"
 import crash "gt:crash"
 import crash_bar "gt:crash_bar"
@@ -83,7 +84,7 @@ App :: struct {
 	list_next:  History_List,       // a newer list, while it waits for the view of the newest query (has_list_next)
 	has_list_next: bool,
 	seen:       u64,                // the watcher's version last asked of the reader
-	exit_code:  int,
+	exit:       cli.Exit,
 
 	// the interface
 	search:     ui.Line_Edit,
@@ -128,7 +129,7 @@ App :: struct {
 	status_until: f64,
 }
 
-app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup_asked := false) -> int {
+app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup_asked := false) -> cli.Exit {
 	// (the running papier's errors go to its log, written by a thread of its own; echoed on the standard error for a
 	// terminal and the live tests)
 	logger := tk_log.install({program = APP_NAME, echo = true})
@@ -165,7 +166,7 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	platform.dragdrop_thread_init()   // (Windows: OLE, for an entry dragged out: drag.odin)
 	if !host.host_open(&app.main, &app.shared, {title = "papier", size = app.settings.size, integrated_title = !app.settings.system_title}, view_build, app) {
 		log.error("papier: no window")
-		return 1
+		return .Failed
 	}
 	h := &app.main
 	win := h.win
@@ -199,7 +200,7 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	if !watcher_start(&app.watcher, owner, win, &app.prefs) {
 		reader_stop(&app.reader)
 		log.error("papier: the clipboard watcher cannot start")
-		return 1
+		return .Failed
 	}
 	decoder_start(&app.decoder, win)
 	slow_start(&app.slow, win)
@@ -270,13 +271,13 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	prefs_page.install_launch(&app.install)
 	launch, launch_hidden := app.launch_after, app.launch_hidden
 	app.launch_after = ""
-	exit_code := app.exit_code
+	exit := app.exit
 	app_free(app)
 	if launch != "" {
 		if !setup.launch(launch, launch_hidden ? []string{"--hidden"} : nil) { log.errorf("papier: %s does not start", launch) }
 		delete(launch)
 	}
-	return exit_code
+	return exit
 }
 
 @(private = "file")
@@ -549,7 +550,7 @@ app_follow_reader :: proc(app: ^App) -> bool {
 	changed := false
 	if res.failed {
 		log.errorf("papier: the history cannot be opened: %s", res.failure)
-		app.exit_code = 1
+		app.exit = .Failed
 		app.quit = true
 	}
 	// (a list waits for the view of the newest query: never a view of one list shown with another)

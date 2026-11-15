@@ -8,6 +8,7 @@
 package papiertool
 
 import changelog "gt:changelog"
+import cli "gt:cli"
 import release "gt:release"
 import toolbox "gt:toolbox"
 import papier_licence "../../src/licence"
@@ -58,7 +59,7 @@ I18N := toolbox.I18n_Catalogues{dirs = {"src"}, folder = "i18n"}
 
 commands :: proc() -> []toolbox.Command {
 	p := project()
-	r := release.commands({project = p, dist = "build/dist", files = RELEASE_FILES[:], check = proc() -> int { return run_check(nil) }, update = papier_update.PRODUCT})
+	r := release.commands({project = p, dist = "build/dist", files = RELEASE_FILES[:], check = proc() -> cli.Exit { return run_check(nil) }, update = papier_update.PRODUCT})
 	list := make([dynamic]toolbox.Command, context.temp_allocator)
 	append(&list,
 		toolbox.Command{name = "build", usage = "[release]: the toolkit's text library and SQLite when their sources changed, then build/papier", run = run_build},
@@ -66,7 +67,7 @@ commands :: proc() -> []toolbox.Command {
 		toolbox.Command{name = "check", usage = ": the changelog, the scopes, the French catalogue, odin check of the program for this system and for Windows and of this tool (-vet), the tests, then a release build", run = run_check},
 		toolbox.logo_command(logo()),
 		r[0], r[1], r[2],
-		toolbox.Command{name = "update", usage = "keygen <file> | pubkey | manifest <program> <version> - <out> | verify <manifest> -: papier's update key and manifests", run = proc(args: []string) -> int { return toolbox.update_command(papier_update.PRODUCT, args) }},
+		toolbox.Command{name = "update", usage = "keygen <file> | pubkey | manifest <program> <version> - <out> | verify <manifest> -: papier's update key and manifests", run = proc(args: []string) -> cli.Exit { return toolbox.update_command(papier_update.PRODUCT, args) }},
 		changelog.command(p),
 		toolbox.i18n_command(I18N),
 		site_command(),

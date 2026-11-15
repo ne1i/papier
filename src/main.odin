@@ -8,6 +8,7 @@ import "core:fmt"
 import "core:os"
 import "core:strconv"
 import "core:strings"
+import cli "gt:cli"
 import config "gt:config"
 import instance "gt:instance"
 import "gt:platform"
@@ -45,10 +46,10 @@ USAGE :: `papier: the clipboard's history
 `
 
 main :: proc() {
-	os.exit(run(os.args[1:]))
+	cli.exit(run(os.args[1:]))
 }
 
-run :: proc(all_args: []string) -> int {
+run :: proc(all_args: []string) -> cli.Exit {
 	prefs: config.Prefs
 	args, problems := prefs_open(&prefs, all_args)
 	defer config.prefs_destroy(&prefs)
@@ -65,27 +66,27 @@ run :: proc(all_args: []string) -> int {
 		return start(&prefs, verb)
 	case "show", "hide", "quit", "copy", "pin", "unpin", "delete", "clear", "reload":
 		c, ok := command_parse(strings.join(args[:], " ", context.temp_allocator))
-		if !ok { errs(USAGE); return 2 }
-		if !command_send(c) { errln("papier: papier does not run (start it with: papier --hidden)"); return 1 }
-		return 0
+		if !ok { errs(USAGE); return .Usage }
+		if !command_send(c) { errln("papier: papier does not run (start it with: papier --hidden)"); return .Failed }
+		return .Done
 	case "list":    return cmd_list(&prefs, rest)
 	case "get":     return cmd_get(&prefs, rest)
 	case "prefs":   return cmd_prefs(&prefs)
 	case "set":     return cmd_set(&prefs, rest)
 	case "version", "--version":
 		outf("papier %s", APP_VERSION)
-		return 0
+		return .Done
 	case "help", "-h", "--help":
 		outs(USAGE)
-		return 0
+		return .Done
 	}
 	errs(USAGE)
-	return 2
+	return .Usage
 }
 
 // The running papier is asked to show (or toggle) its window; when none runs, this process becomes it.
 @(private = "file")
-start :: proc(prefs: ^config.Prefs, verb: string) -> int {
+start :: proc(prefs: ^config.Prefs, verb: string) -> cli.Exit {
 	hidden := verb == "--hidden"
 	message := hidden ? "ping" : verb == "toggle" ? "toggle" : verb == "--setup" ? "setup" : "show"
 	// (Wayland: the launcher's token goes with it, so the running papier's window gets the keyboard)
@@ -95,13 +96,13 @@ start :: proc(prefs: ^config.Prefs, verb: string) -> int {
 	outcome, owner := instance.acquire({name = DAEMON_NAME, wait_ms = 1500}, transmute([]u8)message)
 	switch outcome {
 	case .First:          return app_run(prefs, hidden, owner, setup_asked = verb == "--setup")
-	case .Forwarded:      return 0
-	case .Other_Instance: return 0
+	case .Forwarded:      return .Done
+	case .Other_Instance: return .Done
 	case .Unresponsive:
 		errln("papier: a papier runs and does not answer")
-		return 1
+		return .Failed
 	}
-	return 1
+	return .Failed
 }
 
 @(private = "file")
@@ -120,29 +121,29 @@ open_store :: proc(prefs: ^config.Prefs, s: ^history.Store) -> bool {
 }
 
 @(private = "file")
-cmd_list :: proc(prefs: ^config.Prefs, args: []string) -> int {
+cmd_list :: proc(prefs: ^config.Prefs, args: []string) -> cli.Exit {
 	count := 20
 	if len(args) > 0 { count = strconv.parse_int(args[0]) or_else count }
 	s: history.Store
-	if !open_store(prefs, &s) { return 1 }
+	if !open_store(prefs, &s) { return .Failed }
 	defer history.close(&s)
 	now := now_ms()
 	for e in s.entries[:min(count, len(s.entries))] {
 		outf("%d\t%s%s\t%s\t%s", e.id, history.KIND_NAMES[e.kind], e.pinned ? "*" : "", timefmt.age(f64(now - e.time_ms)), one_line(e.preview, 100))
 	}
-	return 0
+	return .Done
 }
 
 @(private = "file")
-cmd_get :: proc(prefs: ^config.Prefs, args: []string) -> int {
-	if len(args) == 0 { errs(USAGE); return 2 }
+cmd_get :: proc(prefs: ^config.Prefs, args: []string) -> cli.Exit {
+	if len(args) == 0 { errs(USAGE); return .Usage }
 	id, ok := strconv.parse_u64(args[0])
-	if !ok { errs(USAGE); return 2 }
+	if !ok { errs(USAGE); return .Usage }
 	s: history.Store
-	if !open_store(prefs, &s) { return 1 }
+	if !open_store(prefs, &s) { return .Failed }
 	defer history.close(&s)
 	at := history.find(&s, id)
-	if at < 0 { errf("papier: no entry %d", id); return 1 }
+	if at < 0 { errf("papier: no entry %d", id); return .Failed }
 	e := s.entries[at]
 	rep := -1
 	if len(args) > 1 {
@@ -150,34 +151,34 @@ cmd_get :: proc(prefs: ^config.Prefs, args: []string) -> int {
 	} else {
 		for r, i in e.reps { if r.hash == e.key { rep = i; break } }
 	}
-	if rep < 0 { errf("papier: entry %d has no such type", id); return 1 }
+	if rep < 0 { errf("papier: entry %d has no such type", id); return .Failed }
 	data := history.blob_read(&s, e.reps[rep].hash, context.temp_allocator)
-	if data == nil { errln("papier: the entry's data is gone"); return 1 }
+	if data == nil { errln("papier: the entry's data is gone"); return .Failed }
 	outs(string(data))
-	return 0
+	return .Done
 }
 
 @(private = "file")
-cmd_prefs :: proc(prefs: ^config.Prefs) -> int {
+cmd_prefs :: proc(prefs: ^config.Prefs) -> cli.Exit {
 	for name in config.sorted_names(prefs) {
 		r := config.ref_of(prefs, name)
 		e := config.entry(prefs, r)
 		outf("%s = %s%s\n    %s", name, config.value_string(prefs, r), config.is_default(prefs, r) ? "" : "   (changed)", e.def.description)
 	}
-	return 0
+	return .Done
 }
 
 @(private = "file")
-cmd_set :: proc(prefs: ^config.Prefs, args: []string) -> int {
-	if len(args) != 2 { errs(USAGE); return 2 }
+cmd_set :: proc(prefs: ^config.Prefs, args: []string) -> cli.Exit {
+	if len(args) != 2 { errs(USAGE); return .Usage }
 	if err := config.set_from_string(prefs, args[0], args[1], .User); err != .None {
 		errf("papier: %s: %s", args[0], config.set_error_text(err))
-		return 1
+		return .Failed
 	}
 	path := prefs_file()
-	if !config.save_user(prefs, path) { errf("papier: %s cannot be written", path); return 1 }
+	if !config.save_user(prefs, path) { errf("papier: %s cannot be written", path); return .Failed }
 	command_send({verb = .Reload})
-	return 0
+	return .Done
 }
 
 // The text on one line: blanks run together, cut after `max_runes` characters with an ellipsis.

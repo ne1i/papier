@@ -16,7 +16,9 @@ import "core:os"
 import "core:strings"
 import "core:time"
 import cdp "gt:cdp"
+import cli "gt:cli"
 import ocr "gt:ocr"
+import toolbox "gt:toolbox"
 
 LIVE_DIR  :: "build/live"
 LIVE_PORT :: 9361
@@ -53,14 +55,14 @@ line_count :: proc(list: string) -> int {
 	return t == "" ? 0 : strings.count(t, "\n") + 1
 }
 
-run_live :: proc(args: []string) -> int {
+run_live :: proc(args: []string) -> cli.Exit {
 	keep := len(args) > 0 && args[0] == "--keep"
-	if run_build(nil) != 0 { return 1 }
+	if run_build(nil) != .Done { return .Failed }
 	l: Live
 	if why := session_start(&l.session, LIVE_DIR, LIVE_PORT); why != "" {
 		fmt.eprintfln("papiertool live: %s", why)
 		session_stop(&l.session)
-		return 1
+		return .Failed
 	}
 	dir := strings.clone(l.dir, context.temp_allocator)
 	fmt.printfln("live: papier runs in a headless sway (%s)", dir)
@@ -75,7 +77,7 @@ run_live :: proc(args: []string) -> int {
 	check(&l, !strings.contains(string(log), "error"), "papier wrote no error (%s/papier.log)", dir)
 	fmt.printfln("live: %d checks, %d failed", l.checks, l.failures)
 	if !keep && l.failures == 0 { _ = os.remove_all(dir) }
-	return l.failures == 0 ? 0 : 1
+	return toolbox.ended(l.failures == 0)
 }
 
 // Copies of each kind and what papier makes of them.

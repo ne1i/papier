@@ -10,6 +10,7 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 import cdp "gt:cdp"
+import cli "gt:cli"
 
 SHOTS_DIR     :: "build/shots"
 SHOTS_PORT    :: 9362
@@ -34,16 +35,16 @@ SAMPLES :: [?]Sample{
 	{text = "proc fibonacci(n: u64) -> u64 {\n\tif n < 2 { return n }\n\treturn fibonacci(n - 1) + fibonacci(n - 2)\n}", seen = "proc fibonacci"},
 }
 
-run_shots :: proc(args: []string) -> int {
+run_shots :: proc(args: []string) -> cli.Exit {
 	out := SHOTS_OUT
 	if len(args) == 2 && args[0] == "--out" { out = args[1] }
-	if run_build({"release"}) != 0 { return 1 }
+	if run_build({"release"}) != .Done { return .Failed }
 	s: Session
 	defer session_stop(&s)
-	if why := session_start(&s, SHOTS_DIR, SHOTS_PORT, {"appearance.mode\tdark"}); why != "" { fmt.eprintfln("papiertool shots: %s", why); return 1 }
+	if why := session_start(&s, SHOTS_DIR, SHOTS_PORT, {"appearance.mode\tdark"}); why != "" { fmt.eprintfln("papiertool shots: %s", why); return .Failed }
 	samples := SAMPLES
 	for x in samples {
-		if !copy_and_wait(&s, x.text, x.mime, x.file, x.seen) { fmt.eprintfln("papiertool shots: %q did not reach the history", x.seen); return 1 }
+		if !copy_and_wait(&s, x.text, x.mime, x.file, x.seen) { fmt.eprintfln("papiertool shots: %q did not reach the history", x.seen); return .Failed }
 	}
 	// the address pinned
 	list, _ := run_in(&s, PROGRAM, "list", "100")
@@ -55,7 +56,7 @@ run_shots :: proc(args: []string) -> int {
 	_ = os.make_directory_all(out)
 	_, _ = run_in(&s, PROGRAM, "show")
 	c, ok := window_connect(&s)
-	if !ok { fmt.eprintln("papiertool shots: the window does not answer"); return 1 }
+	if !ok { fmt.eprintln("papiertool shots: the window does not answer"); return .Failed }
 	defer cdp.close(&c)
 	failed := false
 	shot :: proc(c: ^cdp.Client, out, name: string, failed: ^bool) {
@@ -132,14 +133,14 @@ run_shots :: proc(args: []string) -> int {
 	} else {
 		failed = true
 	}
-	if failed { return 1 }
+	if failed { return .Failed }
 
 	// the site shows the same pictures (not pictures written elsewhere: --out leaves the site as it is)
-	if out != SHOTS_OUT { return 0 }
+	if out != SHOTS_OUT { return .Done }
 	_ = os.make_directory_all(SHOTS_SITE)
 	for name in ([]string{"main", "images", "search", "menu", "edit", "palette", "qr", "markdown", "settings", "light"}) {
 		data, err := os.read_entire_file(fmt.tprintf("%s/%s.png", out, name), context.temp_allocator)
 		if err == nil { _ = os.write_entire_file(fmt.tprintf("%s/%s.png", SHOTS_SITE, name), data) }
 	}
-	return 0
+	return .Done
 }
