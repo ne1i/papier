@@ -61,9 +61,11 @@ SHOP :: tk_site.Shop{
 	product_title  = "Papier User License",
 	price          = "15&nbsp;&euro;",
 	price_note     = "",
-	environment    = "sandbox",
+	environment    = "production",
+	client_token   = "live_cc454434f1340eaec97edd187d0",   // Paddle's client-side token (public: it is in the page)
 	edition        = "supporter",
-	price_id       = "",
+	price_id       = "pri_01m7fyah37tdgnpsxs8kh5ss03",
+	worker         = "https://papier-licence.sacha-42a.workers.dev",
 	thanks         = "https://papier.froment.software/thanks/",
 	help           = REPOSITORY + "/issues/new",
 	register       = "Open papier's settings (Ctrl+,), the <b>General</b> page, <b>Licence</b>: paste the key, or choose the file.",
