@@ -20,7 +20,7 @@ import setup "gt:setup"
 // What the setup knows of papier.
 setup_options :: proc() -> setup.Setup_Options {
 	return setup.Setup_Options{
-		identity = papier_identity(), version = APP_VERSION, install_folder = APP_NAME, icons = ICON_PNGS[:],
+		identity = papier_identity(), version = APP_VERSION, icons = ICON_PNGS[:],
 		vendor_url = "https://froment.software",
 		choices = SETUP_CHOICES[:], running = daemon_running, quit = daemon_quit,
 		prepare = proc(o: ^desktop.Integration_Options, choices: []bool, user: rawptr) {
