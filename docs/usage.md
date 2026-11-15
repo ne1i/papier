@@ -130,8 +130,9 @@ time.
 
 ![An entry as a QR code](screenshots/qr.png)
 
-To open an entry that is not a file, papier writes it to `$XDG_RUNTIME_DIR/papier/open/papier-<id>.<extension>`: a
-program needs a file. The session's runtime folder is yours alone and empty at the next session.
+To open an entry that is not a file, papier writes it to `$XDG_RUNTIME_DIR/papier/open/papier-<id>.<extension>`
+(`%TEMP%\papier\open` on Windows): a program needs a file. The session's runtime folder is yours alone and empty at
+the next session.
 
 ## A QR code in an image
 
@@ -225,10 +226,13 @@ papier get "$(papier list 100 | awk -F'\t' '$2 ~ /^image/ { print $1; exit }')" 
 | What | Where |
 |---|---|
 | The history | `$XDG_DATA_HOME/papier` (`~/.local/share/papier`): `history.db` |
-| The history, with `history.persist` off | `$XDG_RUNTIME_DIR/papier`: gone at the end of the session |
+| The history, with `history.persist` off | `$XDG_RUNTIME_DIR/papier` (without it, `$TMPDIR/papier` or `/tmp/papier`, yours alone): gone at the end of the session |
 | The preferences | `$XDG_CONFIG_HOME/papier/prefs` (`~/.config/papier/prefs`) |
 | The window's size and place | `$XDG_STATE_HOME/papier/window` (`~/.local/state/papier/window`) |
 | Where each dialog is shown, and its size | `$XDG_STATE_HOME/papier/views.txt` |
+| What the palette remembers you chose | `$XDG_STATE_HOME/papier/palette_choices.txt` |
+
+The history's folder is made readable by you alone.
 
 `history.db` is a SQLite database: `sqlite3 ~/.local/share/papier/history.db` reads it. The bytes of each type of each
 copy are stored once, by their hash. The search reads the whole text of each copy.

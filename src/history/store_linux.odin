@@ -19,6 +19,7 @@ package history
 
 import "base:runtime"
 import "core:fmt"
+import "core:os"
 import "core:strings"
 import "gt:fsx"
 import "../sqlite"
@@ -49,6 +50,11 @@ CREATE VIRTUAL TABLE IF NOT EXISTS texts USING fts5 (body, tokenize = 'trigram')
 // opened (no SQLite, a file that is not one).
 open :: proc(s: ^Store, dir: string) -> (ok: bool, why: string) {
 	fsx.make_dirs(dir)
+	// (the user's alone: a history kept off the disk is in the system's temporary folder when the session has no
+	// runtime folder, and every user can list that one; a folder there that another user made is refused)
+	if os.chmod(dir, {.Read_User, .Write_User, .Execute_User}) != nil {
+		return false, fmt.tprintf("%s is not this user's folder", dir)
+	}
 	s.db, why = sqlite.open(strings.concatenate({dir, "/", DB_FILE}, context.temp_allocator))
 	if s.db == nil { return false, why }
 	s.dir = strings.clone(dir)

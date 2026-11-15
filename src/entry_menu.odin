@@ -21,7 +21,6 @@ package papier
 
 import "base:runtime"
 import "core:fmt"
-import "core:os"
 import "core:path/filepath"
 import "core:strings"
 import desktop "gt:desktop"
@@ -186,17 +185,16 @@ entry_file_name :: proc(e: ^history.Entry) -> string {
 	return fmt.tprintf("papier-%d.%s", e.id, at >= 0 ? extension_of(e.reps[at].mime) : "bin")
 }
 
-// Where the entries opened as files are written: the session's runtime directory (the user's alone, emptied at the
-// end of the session), else the system's temporary folder.
+// Where the entries opened as files are written: papier's runtime folder (the toolkit's: Linux the session's,
+// $XDG_RUNTIME_DIR/papier, the user's alone and emptied at the end of the session, else the system's temporary folder;
+// Windows %TEMP%\papier), its "open" folder.
 // filepath.join: the program opened receives this path, so it has the system's separator only (on Windows the
 // temporary folder joined with "/" gave "C:\Users\x\AppData\Local\Temp/papier-open").
 open_dir :: proc() -> string {
-	dir: string
-	if run := os.get_env("XDG_RUNTIME_DIR", context.temp_allocator); run != "" {
-		dir, _ = filepath.join({run, "papier", "open"}, context.temp_allocator)
-	} else {
-		dir, _ = filepath.join({fsx.temp_dir(context.temp_allocator), "papier-open"}, context.temp_allocator)
-	}
+	run := platform.user_dir(.Runtime, APP_NAME, context.temp_allocator)
+	// (no runtime folder the system would give: a Windows without its known folders)
+	if run == "" { run, _ = filepath.join({fsx.temp_dir(context.temp_allocator), APP_NAME}, context.temp_allocator) }
+	dir, _ := filepath.join({run, "open"}, context.temp_allocator)
 	return dir
 }
 
