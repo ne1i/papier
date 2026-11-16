@@ -3,6 +3,14 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.32.0] - 2026-11-16 17:51
+
+### Added
+- **Your licence as a card.** The Licence page of the settings shows a registered licence as a card: an engraved iridescent foil, your name raised in silver, a seal in relief; it tilts towards the pointer and turns over to show its back.
+
+### Changed
+- **Shift+Enter in the palette goes to an action's button**: on an action that has a button in the window (Settings, Hide, the filters, the preview's Copy, Edit, QR code, Pin, Remove and the image's text), Shift+Enter shows that button, focuses it and lights it once. An action chosen in the palette now shows its effect in the same frame.
+
 ## [0.31.0] - 2026-11-16 13:54
 
 ### Changed
@@ -497,6 +505,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.32.0]: https://github.com/sachahjkl/papier/releases/tag/v0.32.0
 [0.31.0]: https://github.com/sachahjkl/papier/releases/tag/v0.31.0
 [0.30.0]: https://github.com/sachahjkl/papier/releases/tag/v0.30.0
 [0.29.0]: https://github.com/sachahjkl/papier/releases/tag/v0.29.0
