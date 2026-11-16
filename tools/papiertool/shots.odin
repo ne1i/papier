@@ -93,15 +93,18 @@ run_shots :: proc(args: []string) -> cli.Exit {
 	cdp.type_text(&c, "theme")
 	cdp.wait_for(&c, "Show every entry", SESSION_WAIT, gone = true)
 	shot(&c, out, "palette", &failed)
-	// a setting chosen: the settings, on it alone
-	cdp.key(&c, "Enter")
+	// a setting chosen with Shift+Enter, go to: the settings, on it (Enter would change it in the palette itself)
+	cdp.key(&c, "shift+Enter")
+	if !cdp.wait_name(&c, "palette_top", SESSION_WAIT, gone = true) { fmt.eprintln("papiertool shots: the palette did not close on its setting"); failed = true }
 	if !cdp.wait_for(&c, "The colours of Papier's windows", SESSION_WAIT) { fmt.eprintln("papiertool shots: the palette's setting did not open the settings"); failed = true }
 	cdp.key(&c, "ctrl+,")
 	cdp.wait_for(&c, "The colours of Papier's windows", SESSION_WAIT, gone = true)
+	if !cdp.wait_for(&c, "proc fibonacci", SESSION_WAIT) { fmt.eprintln("papiertool shots: the list is not back after the settings"); failed = true }
 	// the address as a QR code
 	cdp.type_text(&c, "github")
 	cdp.wait_for(&c, "proc fibonacci", SESSION_WAIT, gone = true)
 	cdp.key(&c, "ctrl+shift+q")
+	if !cdp.wait_name(&c, "qr_code", SESSION_WAIT) { fmt.eprintln("papiertool shots: the QR code did not show"); failed = true }
 	shot(&c, out, "qr", &failed)
 	cdp.key(&c, "Escape")
 	cdp.key(&c, "Escape")   // (the search, cleared)
