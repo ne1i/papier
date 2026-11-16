@@ -111,7 +111,9 @@ entry_menu_build :: proc(app: ^App, em: f32) {
 @(private = "file")
 item :: proc(app: ^App, a: Action, label := "") {
 	c := ACTIONS[a]
-	if ui.menu_item(label != "" ? label : i18n.tr(c.label), ui.command_shortcut(c), disabled = !action_enabled(app, a), icon = c.icon).clicked { action_run(app, a) }
+	sig := ui.menu_item(label != "" ? label : i18n.tr(c.label), ui.command_shortcut(c), disabled = !action_enabled(app, a), icon = c.icon)
+	ui.act_command(sig.box, c.id)   // (a menu filtered by its letters builds no row: act_command takes nil)
+	if sig.clicked { action_run(app, a) }
 }
 
 ////////////////////////////////

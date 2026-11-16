@@ -32,6 +32,17 @@ data only (`src/actions.odin`).
   `src/md/features/keymap.md`): one `app.keymap`, the actions' ids known before the first frame, the window reading it
   (`ui.keymap_use`), `keys.custom` and `keys.aliases` read and written by `standard_watch`, shown on the Keys page.
   Ctrl+Enter and Alt+Enter in the palette are the toolkit's.
+- **Go to: the buttons that are an action state its act name** (`ui.act_command`, through `icon_action`'s `act`): the
+  title bar's Settings and Hide, the filter's segments (each its `filter_*` action), the preview's Copy, Edit, QR code,
+  Markdown source, QR content, image text, Pin and Remove, and each line of the entry's menu. Shift+Enter on the action
+  comes to its button. Copy, Pin and Remove of the preview act on the entry shown, the actions on the entries selected:
+  their buttons state the act name only while the action acts on that entry alone. A button that is not an action of
+  the table (Back to the history) states none.
+- **No command with arguments.** Papier asks one value in no dialog: the edit view edits a whole text, Save as is the
+  system's file dialog (a path chosen in folders), and the search is the window's field. Nothing gives
+  `Command.arguments` a case, so papier installs no forms runner of its own (the settings source installs it anyway).
+- **The palette's choice is taken before the page** (`actions_build`, after the window's keys): the run mode's writes
+  and an action chosen show in the same frame as the palette.
 - **The settings source is added once** and asks for the page's options when it reads or acts, so the user's themes
   read again need nothing. A new registry of the preferences (a `papier set`, the file changed) bumps its version: a
   policy can fix other settings in it.

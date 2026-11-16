@@ -53,6 +53,9 @@ ACTIONS := [Action]ui.Command{
 	.Quit            = {id = "quit", label = i18n.later("Quit Papier"), group = i18n.later("Papier"), keys = {{.Q, {.Ctrl}}}, icon = lucide.POWER, tags = {"exit", "close", "stop"}, scope = .Window},
 }
 
+// The action that shows each filter: the filter's segment runs it.
+FILTER_ACTIONS := [Filter]Action{.All = .Filter_All, .Text = .Filter_Text, .Images = .Filter_Images, .Files = .Filter_Files, .Pinned = .Filter_Pinned}
+
 // The entries an action acts on: those selected in the list's order, else the cursor's (temp memory). Run when an
 // action runs, not at each build: it goes over the selection.
 acted_on :: proc(app: ^App) -> []^history.Entry {

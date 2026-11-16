@@ -308,11 +308,12 @@ view_build :: proc(h: ^host.Host, size: host.Vec2) {
 		// keeps the focus it was given)
 		if !app.edit.active && !app.settings_open && !views_open(app) && app.search_key != 0 && ui.focus_key() != app.search_key { ui.set_focus(app.search_key) }
 		view_keys(app)
+		// (the palette's choice before the page: its run mode's writes and an action chosen show in this frame)
+		actions_build(app)
 		ui.next({width = ui.fill(), height = ui.fill(), axis = .Y})
 		page := ui.build_box({.Draw_Background}, "###page")
 		if ui.parent(page) { build_page(app, em) }
 		entry_menu_build(app, em)
-		actions_build(app)
 		setup_build(app)
 	}
 }
@@ -356,10 +357,19 @@ glyph :: proc(app: ^App, g: string, width: f32, fg: Maybe(ui.Color) = nil) {
 	ui.build_box({.Draw_Text, .No_Text_Trunc}, fmt.tprintf("%s###g%d", g, ui.parent_box().child_count))
 }
 
-// A small button with a Lucide icon; its tooltip says what it does.
-icon_action :: proc(app: ^App, id, g, tip: string, em: f32) -> bool {
+// A small button with a Lucide icon; its tooltip says what it does. `act`: the action it runs, whose act name it states
+// (the palette's Shift+Enter on that action comes to it); nil when it runs no action of the table as the table does.
+icon_action :: proc(app: ^App, id, g, tip: string, em: f32, act: Maybe(Action) = nil) -> bool {
 	ui.next({width = ui.px(em * 2.1), height = ui.px(em * 2.1), radius = em * 0.4})
-	return ui.button(id, icon = g, o = {tip = tip, icon_font = app.icons}).clicked
+	sig := ui.button(id, icon = g, o = {tip = tip, icon_font = app.icons})
+	if a, ok := act.?; ok { ui.act_command(sig.box, ACTIONS[a].id) }
+	return sig.clicked
+}
+
+// `a` when `on`, else none: the act of a button that is that action only in some states.
+action_if :: proc(on: bool, a: Action) -> Maybe(Action) {
+	if on { return a }
+	return nil
 }
 
 @(private = "file")
@@ -377,7 +387,7 @@ build_title :: proc(app: ^App, em: f32) {
 			if icon_action(app, "back", lucide.ARROW_LEFT, ui.key_tip(i18n.tr("Back to the history"), {.Escape, {}}), em) { app.settings_open = false }
 			ui.space(ui.TOOL_GAP)
 			// (the system's title bar has its own close button)
-			if !app.settings.system_title && icon_action(app, "close", lucide.X, ui.key_tip(i18n.tr("Hide"), {.Escape, {}}), em) { app_hide(app) }
+			if !app.settings.system_title && icon_action(app, "close", lucide.X, ui.key_tip(i18n.tr("Hide"), {.Escape, {}}), em, .Hide) { app_hide(app) }
 			ui.space(ui.SPACE_2)
 			return
 		}
@@ -408,9 +418,9 @@ build_title :: proc(app: ^App, em: f32) {
 			build_filter(app)
 		}
 		ui.space(ui.CONTROL_GAP)
-		if icon_action(app, "settings", lucide.SETTINGS, ui.key_tip(i18n.tr("Settings"), {.Comma, {.Ctrl}}), em) { settings_toggle(app) }
+		if icon_action(app, "settings", lucide.SETTINGS, ui.key_tip(i18n.tr("Settings"), {.Comma, {.Ctrl}}), em, .Settings) { settings_toggle(app) }
 		// (the system's title bar has its own close button)
-		if !app.settings.system_title && icon_action(app, "close", lucide.X, ui.key_tip(i18n.tr("Hide"), {.Escape, {}}), em) { app_hide(app) }
+		if !app.settings.system_title && icon_action(app, "close", lucide.X, ui.key_tip(i18n.tr("Hide"), {.Escape, {}}), em, .Hide) { app_hide(app) }
 		ui.space(ui.SPACE_2)
 	}
 }
@@ -436,6 +446,11 @@ build_filter :: proc(app: ^App) {
 	sel := int(app.filter)
 	labels := filter_texts()
 	if ui.segmented("###filter", labels[:FILTER_COUNT], &sel) { set_filter(app, Filter(sel)) }
+	// (each segment runs its Show… action: the control holds their act names, so Shift+Enter on one comes here;
+	// segmented gives no box, it is the last one built)
+	if b := ui.parent_box().last; b != nil {
+		for i in 0 ..< FILTER_COUNT { ui.act_command(b, ACTIONS[FILTER_ACTIONS[Filter(i)]].id) }
+	}
 }
 
 @(private = "file")
@@ -684,23 +699,27 @@ build_view_body :: proc(app: ^App, em: f32) {
 				ui.label(fmt.tprintf("%s%s · %s · %s###meta", lang, size_text(history.entry_size(e^)), types, age))
 			}
 		}
-		if icon_action(app, "copy", lucide.COPY, action_tip(.Copy), em) { entry_copy(app, e.id) }
+		// (Copy, Pin and Remove act on the entries selected, these buttons on the entry shown: they are the action only
+		// while it acts on that entry alone)
+		n := len(app.vl.selected)
+		on_e := n == 0 || (n == 1 && e.id in app.vl.selected)
+		if icon_action(app, "copy", lucide.COPY, action_tip(.Copy), em, action_if(on_e, .Copy)) { entry_copy(app, e.id) }
 		if e.kind == .Text || e.kind == .Html {
-			if icon_action(app, "edit", lucide.EDIT, action_tip(.Edit), em) { edit_begin(app, e) }
+			if icon_action(app, "edit", lucide.EDIT, action_tip(.Edit), em, .Edit) { edit_begin(app, e) }
 		}
-		if qr_text(app, e) != "" && icon_action(app, "qr", lucide.QR_CODE, action_tip(.Show_QR), em) { qr_open(app, e) }
+		if qr_text(app, e) != "" && icon_action(app, "qr", lucide.QR_CODE, action_tip(.Show_QR), em, .Show_QR) { qr_open(app, e) }
 		// (Markdown: rendered or its source, the choice kept for the session)
 		if loaded_for(app, e) && app.loaded.form == .Markdown {
 			tip := app.markdown_source ? i18n.tr("Show it rendered") : i18n.tr("Show the source")
-			if icon_action(app, "mdsource", app.markdown_source ? lucide.EYE : lucide.FILE_CODE, fmt.tprintf("%s (%s)", tip, ui.command_shortcut(ACTIONS[.Toggle_Markdown_Source])), em) {
+			if icon_action(app, "mdsource", app.markdown_source ? lucide.EYE : lucide.FILE_CODE, fmt.tprintf("%s (%s)", tip, ui.command_shortcut(ACTIONS[.Toggle_Markdown_Source])), em, .Toggle_Markdown_Source) {
 				action_run(app, .Toggle_Markdown_Source)
 			}
 		}
 		// (an image: the code it holds, its text; images have no "Show as a QR code", so the icon is free)
-		if image_qr(app, e) != "" && icon_action(app, "qrcontent", lucide.QR_CODE, action_tip(.Copy_Qr_Content), em) { action_run(app, .Copy_Qr_Content) }
-		if e.kind == .Image && ocr_offered(app) && icon_action(app, "ocr", lucide.FILE_TEXT, action_tip(.Copy_Image_Text), em) { action_run(app, .Copy_Image_Text) }
-		if PINS && icon_action(app, "pin", e.pinned ? lucide.PIN_OFF : lucide.PIN, fmt.tprintf("%s (%s)", e.pinned ? i18n.tr("Unpin") : i18n.tr("Pin"), ui.command_shortcut(ACTIONS[.Pin])), em) { toggle_pin(app, e) }
-		if icon_action(app, "delete", lucide.TRASH_2, action_tip(.Remove), em) { remove_entry(app, e.id); return }
+		if image_qr(app, e) != "" && icon_action(app, "qrcontent", lucide.QR_CODE, action_tip(.Copy_Qr_Content), em, .Copy_Qr_Content) { action_run(app, .Copy_Qr_Content) }
+		if e.kind == .Image && ocr_offered(app) && icon_action(app, "ocr", lucide.FILE_TEXT, action_tip(.Copy_Image_Text), em, .Copy_Image_Text) { action_run(app, .Copy_Image_Text) }
+		if PINS && icon_action(app, "pin", e.pinned ? lucide.PIN_OFF : lucide.PIN, fmt.tprintf("%s (%s)", e.pinned ? i18n.tr("Unpin") : i18n.tr("Pin"), ui.command_shortcut(ACTIONS[.Pin])), em, action_if(on_e, .Pin)) { toggle_pin(app, e) }
+		if icon_action(app, "delete", lucide.TRASH_2, action_tip(.Remove), em, action_if(on_e, .Remove)) { remove_entry(app, e.id); return }
 		ui.space(ui.SPACE_2)
 	}
 	ui.hline(ui.fill())
