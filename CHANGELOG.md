@@ -3,6 +3,12 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.31.0] - 2026-11-16 13:54
+
+### Changed
+- **Pictures of today.** The README and the site show papier as it is now, not as it was in version 0.15.
+- **Even spacing.** The gaps of papier's windows follow the toolkit's one scale, so neighbouring parts line up.
+
 ## [0.30.0] - 2026-11-16 12:10
 
 ### Fixed
@@ -491,6 +497,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.31.0]: https://github.com/sachahjkl/papier/releases/tag/v0.31.0
 [0.30.0]: https://github.com/sachahjkl/papier/releases/tag/v0.30.0
 [0.29.0]: https://github.com/sachahjkl/papier/releases/tag/v0.29.0
 [0.28.0]: https://github.com/sachahjkl/papier/releases/tag/v0.28.0
