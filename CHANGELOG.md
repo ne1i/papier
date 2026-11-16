@@ -3,6 +3,11 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.32.1] - 2026-11-16 22:08
+
+### Fixed
+- **The command palette appears at once, with its rows.** Ctrl+K showed it after a few empty frames, faded it in before its rows came, and jumped when a frame was late; now it comes in the frame its rows are ready, and fades in over 70 ms.
+
 ## [0.32.0] - 2026-11-16 17:51
 
 ### Added
@@ -505,6 +510,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.32.1]: https://github.com/sachahjkl/papier/releases/tag/v0.32.1
 [0.32.0]: https://github.com/sachahjkl/papier/releases/tag/v0.32.0
 [0.31.0]: https://github.com/sachahjkl/papier/releases/tag/v0.31.0
 [0.30.0]: https://github.com/sachahjkl/papier/releases/tag/v0.30.0
