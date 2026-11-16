@@ -102,7 +102,7 @@ markdown_code :: proc(user: rawptr, id: string, c: markdown.Code) {
 			ui.next({width = ui.fill(), text_pad = 0})
 			ui.paragraph(fmt.tprintf("%s###%s_why", fmt.tprintf(i18n.tr("Not a diagram: %s"), d.why), id))
 		}
-		ui.spacer(ui.px(math.round(ui.font_size() * 0.3)))
+		ui.space(ui.LINE_GAP)
 	}
 	markdown.code_block(id, c, u.cfg)
 }

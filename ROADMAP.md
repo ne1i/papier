@@ -2,6 +2,10 @@
 
 ## Now
 
+- **Pictures made again.** `papiertool shots` must give each picture its own scene (`qr.png` shows the settings'
+  palette today) and show no path of the machine (the settings' foot shows the session's full path since the session
+  has a home of its own). Then the README and the site show papier as it is now, not version 0.15.
+
 ## Next
 
 - **The whole of Markdown.** A `mermaid` block of a Markdown text is drawn as a diagram, not left as code. A text that

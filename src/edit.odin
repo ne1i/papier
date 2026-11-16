@@ -73,7 +73,7 @@ edit_keys :: proc(app: ^App) {
 edit_build :: proc(app: ^App, e: ^history.Entry, em: f32) {
 	ui.next({width = ui.fill(), height = ui.px(ui.dense(em * 2.5))})
 	if ui.row(.Center) {
-		ui.spacer(ui.px(em * 0.6))
+		ui.space(ui.SPACE_2)
 		glyph(app, lucide.EDIT, em * 1.6, ui.color("accent"))
 		ui.next({width = ui.text_size(em * 0.3), height = ui.pct(1)})
 		ui.label(fmt.tprintf("%s###editing", i18n.tr("Editing")))
@@ -92,12 +92,12 @@ edit_build :: proc(app: ^App, e: ^history.Entry, em: f32) {
 		if icon_action(app, "editcopy", lucide.COPY, ui.key_tip(i18n.tr("Copy"), {.Return, {.Ctrl}}), em) { edit_copy(app); return }
 		if icon_action(app, "editsave", lucide.SAVE, ui.key_tip(i18n.tr("Save in place"), {.S, {.Ctrl}}), em) { edit_save(app); return }
 		if icon_action(app, "editcancel", lucide.X, ui.key_tip(i18n.tr("Cancel"), {.Escape, {}}), em) { edit_end(app); return }
-		ui.spacer(ui.px(em * 0.4))
+		ui.space(ui.SPACE_2)
 	}
 	ui.hline(ui.fill())
 	ui.next({width = ui.fill(), height = ui.fill()})
 	if ui.row() {
-		ui.spacer(ui.px(em * 0.5))
+		ui.space(ui.SPACE_2)
 		ui.next({width = ui.fill(), height = ui.fill(), font = ui.mono_font(), font_size = em * 0.95})
 		// (code keeps its language's colours while it is edited; Markdown, a diff and prose are not code: plain)
 		hl: ^ui.Text_Highlight
@@ -105,7 +105,7 @@ edit_build :: proc(app: ^App, e: ^history.Entry, em: f32) {
 		res := ui.text_edit("###editor", &app.edit.area, {placeholder = i18n.tr("The entry's text"), wrap = true, highlight = hl})
 		if app.edit.fresh { ui.set_focus(res.box.key); app.edit.fresh = false }
 		if res.cancelled { edit_end(app) }
-		ui.spacer(ui.px(em * 0.5))
+		ui.space(ui.SPACE_2)
 	}
-	ui.spacer(ui.px(em * 0.5))
+	ui.space(ui.SPACE_2)
 }

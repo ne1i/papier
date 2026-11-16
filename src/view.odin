@@ -49,7 +49,7 @@ FIELD_EM  :: 1.95   // the search and the filters
 HALO_ROOM_PX :: 2   // logical pixels past the halo's reach before the bar's rule
 // The title bar's parts other than the search and the filter (its icon, the grip, two buttons, the spaces), and the
 // least the search keeps: under that, the filter goes to a row of its own.
-TITLE_FIXED_EM :: 9.8
+TITLE_FIXED_EM :: 10.3
 SEARCH_MIN_EM  :: 10
 ROW_EM    :: 2.05
 MARK_EM   :: 2.6    // a row's mark: its kind's icon, or an image's thumbnail
@@ -337,10 +337,10 @@ build_page :: proc(app: ^App, em: f32) {
 	if filter_alone(app, em) {
 		ui.next({width = ui.fill(), height = ui.px(ui.dense(em * (FIELD_EM + 0.5)))})
 		if ui.row(.Center) {
-			ui.spacer(ui.px(em * 0.5))
+			ui.space(ui.SPACE_2)
 			ui.next({width = ui.fill(), height = ui.px(ui.dense(em * FIELD_EM))})
 			build_filter(app)
-			ui.spacer(ui.px(em * 0.5))
+			ui.space(ui.SPACE_2)
 		}
 		ui.hline(ui.fill())
 		ui.next({width = ui.fill(), height = ui.fill()})
@@ -367,18 +367,18 @@ build_title :: proc(app: ^App, em: f32) {
 	// (as tall as its fields, and the halo of the focused one around them: the rule under the bar would cut it)
 	ui.next({width = ui.fill(), height = ui.px(ui.dense(em * FIELD_EM) + 2 * (ui.MACHINED_OVERFLOW_PX + HALO_ROOM_PX) * ui.scale())})
 	if ui.title_bar("###titlebar") {
-		ui.spacer(ui.px(em * 0.5))
+		ui.space(ui.SPACE_2)
 		glyph(app, lucide.CLIPBOARD, em * 1.8, ui.color("accent"))
-		ui.spacer(ui.px(em * 0.3))
+		ui.space(ui.ICON_GAP)
 		if app.settings_open {
 			// the page has its own search: the title says where one is, its empty part moves the window
 			ui.next({width = ui.fill(), height = ui.pct(1)})
 			ui.label(APP_TITLE + "###apptitle")
 			if icon_action(app, "back", lucide.ARROW_LEFT, ui.key_tip(i18n.tr("Back to the history"), {.Escape, {}}), em) { app.settings_open = false }
-			ui.spacer(ui.px(em * 0.3))
+			ui.space(ui.TOOL_GAP)
 			// (the system's title bar has its own close button)
 			if !app.settings.system_title && icon_action(app, "close", lucide.X, ui.key_tip(i18n.tr("Hide"), {.Escape, {}}), em) { app_hide(app) }
-			ui.spacer(ui.px(em * 0.4))
+			ui.space(ui.SPACE_2)
 			return
 		}
 		// the search: a field with its icon, as wide as the title leaves
@@ -407,11 +407,11 @@ build_title :: proc(app: ^App, em: f32) {
 			ui.next({height = ui.px(ui.dense(em * FIELD_EM))})   // (as wide as its labels: ui.segmented's own width)
 			build_filter(app)
 		}
-		ui.spacer(ui.px(em * 0.3))
+		ui.space(ui.CONTROL_GAP)
 		if icon_action(app, "settings", lucide.SETTINGS, ui.key_tip(i18n.tr("Settings"), {.Comma, {.Ctrl}}), em) { settings_toggle(app) }
 		// (the system's title bar has its own close button)
 		if !app.settings.system_title && icon_action(app, "close", lucide.X, ui.key_tip(i18n.tr("Hide"), {.Escape, {}}), em) { app_hide(app) }
-		ui.spacer(ui.px(em * 0.4))
+		ui.space(ui.SPACE_2)
 	}
 }
 
@@ -485,7 +485,7 @@ build_list :: proc(app: ^App, em: f32) {
 		ui.next({height = ui.px(ui.dense(em * ROW_EM))})
 		row := ui.list_row(&app.vl, i, "")
 		if ui.parent(row.box) {
-			ui.spacer(ui.px(em * 0.35))
+			ui.space(ui.SPACE_1)
 			// (an image, a copied file: its thumbnail once made, its kind's mark until then)
 			if !has_thumb(e) || !thumb_mark(app, e, em * MARK_EM) {
 				if ui.tags("weak") { glyph(app, KIND_ICONS[e.kind], em * MARK_EM) }
@@ -529,13 +529,13 @@ build_list :: proc(app: ^App, em: f32) {
 build_status :: proc(app: ^App, em: f32) {
 	ui.next({width = ui.fill(), height = ui.px(ui.dense(em * STATUS_EM))})
 	if ui.row(.Center) {
-		ui.spacer(ui.px(em * 0.7))
+		ui.space(ui.SPACE_3)
 		// (an update on offer, coming or in place: a button to act on it, where the eye goes)
 		ui.next({height = ui.px(ui.dense(em * (STATUS_EM - 0.45)))})
 		badge_w: f32
 		if b := prefs_page.update_badge(app.updater, proc(user: rawptr) { app_restart((^App)(user), hidden = false) }, app); b != nil {
-			badge_w = b.rect.max.x - b.rect.min.x + em * 0.6
-			ui.spacer(ui.px(em * 0.6))
+			badge_w = b.rect.max.x - b.rect.min.x + em * ui.CONTROL_GAP
+			ui.space(ui.CONTROL_GAP)
 		}
 		if ui.style({font_size = em * 0.88}) {
 			if ui.tags("weak") {
@@ -558,21 +558,21 @@ build_status :: proc(app: ^App, em: f32) {
 				hints := app.edit.active ? EDIT_HINTS[:] : LIST_HINTS[:]
 				font_now := ui.top_style().font
 				size_now := ui.font_size()
-				room := app.room * ui.scale() - em * 1.0 - badge_w - ui.text_width(font_now, size_now, msg) - em * 1.5
+				room := app.room * ui.scale() - em * (ui.SPACE_3 + ui.SPACE_1) - badge_w - ui.text_width(font_now, size_now, msg) - em * 1.5
 				for hint, i in hints {
 					key := ui.chord_text(hint.key)
 					label := i18n.tr(hint.label)
-					w := ui.text_width(ui.mono_font(), size_now * 0.8, key) + size_now * 0.5 + ui.text_width(font_now, size_now, label) + size_now * 0.3 + em * 0.4
+					w := ui.text_width(ui.mono_font(), size_now * 0.8, key) + size_now * 0.5 + ui.text_width(font_now, size_now, label) + size_now * 0.3 + em * ui.SPACE_2
 					if w > room { break }
 					room -= w
 					ui.kbd(key)
 					ui.next({width = ui.text_size(em * 0.3)})
 					ui.label(fmt.tprintf("%s###h%d", label, i))
-					ui.spacer(ui.px(em * 0.4))
+					ui.space(ui.SPACE_2)
 				}
 			}
 		}
-		ui.spacer(ui.px(em * 0.3))
+		ui.space(ui.SPACE_1)
 	}
 }
 
@@ -668,7 +668,7 @@ build_view_body :: proc(app: ^App, em: f32) {
 	// the header: what it is, its size, its types, and what can be done with it
 	ui.next({width = ui.fill(), height = ui.px(ui.dense(em * 2.5))})
 	if ui.row(.Center) {
-		ui.spacer(ui.px(em * 0.6))
+		ui.space(ui.SPACE_2)
 		glyph(app, KIND_ICONS[e.kind], em * 1.6, ui.color("accent"))
 		ui.next({width = ui.text_size(em * 0.3), height = ui.pct(1)})
 		ui.label(fmt.tprintf("%s###kind", i18n.tr(KIND_LABELS[e.kind])))
@@ -701,22 +701,22 @@ build_view_body :: proc(app: ^App, em: f32) {
 		if e.kind == .Image && ocr_offered(app) && icon_action(app, "ocr", lucide.FILE_TEXT, action_tip(.Copy_Image_Text), em) { action_run(app, .Copy_Image_Text) }
 		if PINS && icon_action(app, "pin", e.pinned ? lucide.PIN_OFF : lucide.PIN, fmt.tprintf("%s (%s)", e.pinned ? i18n.tr("Unpin") : i18n.tr("Pin"), ui.command_shortcut(ACTIONS[.Pin])), em) { toggle_pin(app, e) }
 		if icon_action(app, "delete", lucide.TRASH_2, action_tip(.Remove), em) { remove_entry(app, e.id); return }
-		ui.spacer(ui.px(em * 0.4))
+		ui.space(ui.SPACE_2)
 	}
 	ui.hline(ui.fill())
 	// (the text of this image being read: said where the user looks, the picture still shown and the window free)
 	if app.ocr_reading == e.id {
 		ui.next({width = ui.fill(), height = ui.px(ui.dense(em * 2.2)), axis = .X, cross = .Center})
 		if ui.row(.Center, {}, "###ocr_strip") {
-			ui.spacer(ui.px(em * 0.8))
+			ui.space(ui.SPACE_3)
 			if ui.tags("weak") {
 				ui.next({width = ui.text_size(), height = ui.pct(1)})
 				ui.label(fmt.tprintf("%s###ocr_label", i18n.tr("Reading the text of the image…")))
 			}
-			ui.spacer(ui.px(em * 0.8))
+			ui.space(ui.SPACE_3)
 			ui.next({width = ui.fill(), height = ui.px(max(f32(3), f32(int(em * 0.3))))})
 			ui.progress("###ocr_progress", 0, indeterminate = true)
-			ui.spacer(ui.px(em * 0.8))
+			ui.space(ui.SPACE_3)
 		}
 		ui.hline(ui.fill())
 	}
@@ -766,12 +766,12 @@ build_view_body :: proc(app: ^App, em: f32) {
 	}
 	if ui.scroll_y("###text") {
 		preview_pages(app)
-		ui.spacer(ui.px(em * 0.5))
+		ui.space(ui.SPACE_2)
 		// (as tall as its text: the base style's height is a control's, and a content cut to it never overflows the
 		// scroll box, which then neither scrolls nor shows its bar)
 		ui.next({width = ui.fill(), height = ui.children_sum()})
 		if ui.row() {
-			ui.spacer(ui.px(em * 0.8))
+			ui.space(ui.SPACE_3)
 			ui.next({width = ui.fill()})
 			if ui.style({font = ui.mono_font(), font_size = em * 0.95}) {
 				if has_code {
@@ -786,7 +786,7 @@ build_view_body :: proc(app: ^App, em: f32) {
 					ui.paragraph(fmt.tprintf("%s###body%d", text, e.id))
 				}
 			}
-			ui.spacer(ui.px(em * 0.8))
+			ui.space(ui.SPACE_3)
 		}
 	}
 }
@@ -808,26 +808,26 @@ form_label :: proc(l: Loaded_Entry) -> string {
 build_markdown :: proc(app: ^App, l: ^Loaded_Entry, em: f32) {
 	if ui.scroll_y("###markdown") {
 		preview_pages(app)
-		ui.spacer(ui.px(em * 0.5))
+		ui.space(ui.SPACE_2)
 		// (as tall as the document: see build_view_body's text)
 		ui.next({width = ui.fill(), height = ui.children_sum()})
 		if ui.row() {
-			ui.spacer(ui.px(em * 0.8))
+			ui.space(ui.SPACE_3)
 			ui.next({width = ui.fill(), height = ui.children_sum()})
 			if ui.column() {
 				// (this frame's room, from the window: the box's own width is the last frame's; the pane less its sides
 				// and the scroll bar)
 				u := ui.frame_new(Markdown_User)
-				u^ = {app = app, loaded = l, width = (app.room - app.remembered.split) * ui.scale() - em * 2.6}
+				u^ = {app = app, loaded = l, width = (app.room - app.remembered.split) * ui.scale() - em * (ui.SPACE_3 * 2 + 1)}
 				// (prose and mono 0: the families the user chose, else papier's: the toolkit's text faces)
 				u.cfg = markdown.View_Options{user = u, link = markdown_link}
 				cfg := u.cfg
 				cfg.code = markdown_code
 				markdown.view(l.markdown, fmt.tprintf("md%d", l.id), l.source, cfg)
 			}
-			ui.spacer(ui.px(em * 0.8))
+			ui.space(ui.SPACE_3)
 		}
-		ui.spacer(ui.px(em * 0.5))
+		ui.space(ui.SPACE_2)
 	}
 }
 

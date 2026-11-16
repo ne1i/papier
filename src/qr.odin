@@ -61,7 +61,7 @@ qr_destroy :: proc(app: ^App) {
 // The code's side, in ems, at the least and at the most; the margin at each side of it.
 @(private = "file") QR_MIN_EM    :: 12
 @(private = "file") QR_MAX_EM    :: 26
-@(private = "file") QR_MARGIN_EM :: 1.5
+@(private = "file") QR_MARGIN_EM :: ui.PAGE_MARGIN
 
 // The view: the code, as large as its room allows, the text under it. A dialog grows to what is in it, so its own room
 // would shrink the code at each build: it is sized by the owner window. Elsewhere the room's width sizes it (an internal
@@ -77,21 +77,21 @@ qr_view :: proc(v: ^ui.View, q: ^Qr_View) {
 		side = ui.view_room(v).x - em * QR_MARGIN_EM * 2
 	}
 	side = clamp(side, em * QR_MIN_EM, em * QR_MAX_EM)
-	ui.spacer(ui.px(em * 1.2))
+	ui.space(ui.SPACE_4)
 	ui.next({width = ui.fill(), height = ui.children_sum()})
 	if ui.row() {
 		// (the margins in pixels: what the dialog measures; the fills centre the code in a wider room)
-		ui.spacer(ui.px(em * QR_MARGIN_EM))
+		ui.space(QR_MARGIN_EM)
 		ui.spacer(ui.fill())
 		// (dark on white, its quiet zone included, whatever the theme: a camera reads that)
 		ui.qr_code("###qr_code", q.text, side)
 		ui.spacer(ui.fill())
-		ui.spacer(ui.px(em * QR_MARGIN_EM))
+		ui.space(QR_MARGIN_EM)
 	}
-	ui.spacer(ui.px(em * 0.8))
+	ui.space(ui.SPACE_3)
 	if ui.tags("weak") {
 		ui.next({width = ui.fill(), font_size = em * 0.85, text_align = .Center})
 		ui.paragraph(fmt.tprintf("%s###qr_words", ui.text_shown(one_line(q.text, 160))))
 	}
-	ui.spacer(ui.px(em * 1))
+	ui.space(ui.SPACE_4)
 }
