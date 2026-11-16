@@ -7,6 +7,7 @@ package papiertool
 // (run_in, wl_copy).
 
 import "core:fmt"
+import "core:net"
 import "core:os"
 import "core:strings"
 import "core:time"
@@ -29,8 +30,13 @@ Session :: struct {
 }
 
 // Starts sway and papier in `dir` (made anew). `prefs`: lines of papier's preferences file. `why` says what failed.
-session_start :: proc(s: ^Session, dir: string, port: int, prefs: []string = nil) -> (why: string) {
+// The DevTools port is one the system has free now, not a fixed one: with a fixed port, a second session (another
+// checkout's live, a shots run) cannot listen, and its tool then drives this session's window, as its own, through
+// the port this one holds.
+session_start :: proc(s: ^Session, dir: string, prefs: []string = nil) -> (why: string) {
 	toolbox.guard_groups()   // (a signal that ends the tool ends sway and papier with it)
+	port, free := free_port()
+	if !free { return "no free port on 127.0.0.1 for the DevTools server" }
 	s.port = port
 	if why = toolbox.sway_start(&s.sway, dir, {config = SWAY_CONFIG, homes = true}); why != "" { return }
 	s.dir = s.sway.dir
@@ -52,10 +58,27 @@ session_start :: proc(s: ^Session, dir: string, port: int, prefs: []string = nil
 	s.papier, s.running = p, true
 	deadline := time.tick_add(time.tick_now(), SESSION_WAIT)
 	for time.tick_diff(time.tick_now(), deadline) > 0 {
-		if out, _ := run_in(s, PROGRAM, "--status"); strings.contains(out, "running: true") { return "" }
+		if out, _ := run_in(s, PROGRAM, "--status"); strings.contains(out, "running: true") {
+			// (papier starts its DevTools server before it answers: if the port was taken meanwhile, its log says so now,
+			// and what answers on the port is another program's window)
+			log, _ := os.read_entire_file(fmt.tprintf("%s/papier.log", s.dir), context.temp_allocator)
+			if strings.contains(string(log), "devtools: cannot listen") { return fmt.tprintf("papier cannot serve DevTools on port %d (%s/papier.log)", port, s.dir) }
+			return ""
+		}
 		time.sleep(SESSION_POLL)
 	}
 	return "papier does not answer"
+}
+
+// A port of 127.0.0.1 that no program listens on now: the system's choice for a listener on port 0, let go.
+@(private = "file")
+free_port :: proc() -> (port: int, ok: bool) {
+	l, err := net.listen_tcp({address = net.IP4_Loopback, port = 0})
+	if err != nil { return }
+	defer net.close(l)
+	at, bound := net.bound_endpoint(l)
+	if bound != nil { return }
+	return at.port, true
 }
 
 // Ends papier (quit, then stopped with the session after SESSION_WAIT) and sway. `exit_code` is papier's (-1: it was

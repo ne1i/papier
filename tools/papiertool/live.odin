@@ -21,7 +21,6 @@ import ocr "gt:ocr"
 import toolbox "gt:toolbox"
 
 LIVE_DIR  :: "build/live"
-LIVE_PORT :: 9361
 
 @(private = "file")
 Live :: struct {
@@ -59,7 +58,7 @@ run_live :: proc(args: []string) -> cli.Exit {
 	keep := len(args) > 0 && args[0] == "--keep"
 	if run_build(nil) != .Done { return .Failed }
 	l: Live
-	if why := session_start(&l.session, LIVE_DIR, LIVE_PORT); why != "" {
+	if why := session_start(&l.session, LIVE_DIR); why != "" {
 		fmt.eprintfln("papiertool live: %s", why)
 		session_stop(&l.session)
 		return .Failed

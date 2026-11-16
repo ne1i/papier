@@ -13,7 +13,6 @@ import cdp "gt:cdp"
 import cli "gt:cli"
 
 SHOTS_DIR     :: "build/shots"
-SHOTS_PORT    :: 9362
 SHOTS_OUT     :: "docs/screenshots"
 SHOTS_SITE    :: "site/img"
 
@@ -41,7 +40,7 @@ run_shots :: proc(args: []string) -> cli.Exit {
 	if run_build({"release"}) != .Done { return .Failed }
 	s: Session
 	defer session_stop(&s)
-	if why := session_start(&s, SHOTS_DIR, SHOTS_PORT, {"appearance.mode\tdark"}); why != "" { fmt.eprintfln("papiertool shots: %s", why); return .Failed }
+	if why := session_start(&s, SHOTS_DIR, {"appearance.mode\tdark"}); why != "" { fmt.eprintfln("papiertool shots: %s", why); return .Failed }
 	samples := SAMPLES
 	for x in samples {
 		if !copy_and_wait(&s, x.text, x.mime, x.file, x.seen) { fmt.eprintfln("papiertool shots: %q did not reach the history", x.seen); return .Failed }
