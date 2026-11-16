@@ -46,10 +46,6 @@ SETTINGS_PAGES := [?]prefs_page.Page_Info{
 	{category = "rendering",  title = i18n.later("Rendering"),        icon = lucide.MONITOR},
 }
 
-// The preferences that hold a key combination: recorded from the keys pressed.
-@(private = "file", rodata)
-HOTKEY_PREFS := [?]string{"window.shortcut"}
-
 // What papier has to say under a line: the shortcut that does not work, and why; a title bar the desktop does not draw.
 @(private = "file")
 settings_problem :: proc(user: rawptr, name: string) -> string {
@@ -73,7 +69,7 @@ settings_build :: proc(app: ^App) {
 settings_options :: proc(app: ^App) -> prefs_page.Page_Options {
 	return {
 		user = app, changed = settings_changed,
-		hotkeys = HOTKEY_PREFS[:], problem = settings_problem,
+		problem = settings_problem,
 		updater = app.updater, restart = proc(user: rawptr) { app_restart((^App)(user), hidden = false) },
 		pages = SETTINGS_PAGES[:], icon_font = app.icons, search_icon = lucide.SEARCH, reset_icon = lucide.ROTATE_CCW,
 		file = app.prefs_path,

@@ -35,8 +35,8 @@ PREF_DEFS := [?]config.Def{
 	{name = "paste.on_select", title = i18n.later("On select"), description = i18n.later("An entry chosen (Enter, a double click, Alt+1…9) is pasted into the program Papier was called from: the window hides and Papier presses the paste keys there."), kind = .Bool, default = {b = true}, tags = {"auto paste", "insert", "type"}},
 	{name = "paste.keys", title = i18n.later("Keys"), description = i18n.later("The keys Papier presses to paste: Ctrl+V in most programs, Ctrl+Shift+V in a terminal, Shift+Insert in both on many systems."), kind = .String, default = {s = "Ctrl+V"}, tags = {"ctrl+v", "terminal", "shortcut"}},
 	{name = "window.close_on_copy", title = i18n.later("Close on copy"), description = i18n.later("Close the window when an entry is copied."), kind = .Bool, default = {b = true}, tags = {"hide", "dismiss"}},
-	{name = "window.width", title = i18n.later("Width"), description = i18n.later("The window's width at its first start, in logical pixels."), kind = .Int, default = {i = 900}, min = 320, max = 4000, bounded = true, unit = "px", tags = {"size", "window"}},
-	{name = "window.height", title = i18n.later("Height"), description = i18n.later("The window's height at its first start, in logical pixels."), kind = .Int, default = {i = 560}, min = 240, max = 4000, bounded = true, unit = "px", tags = {"size", "window"}},
+	{name = "window.width", title = i18n.later("Width"), description = i18n.later("The window's width at its first start, in logical pixels."), kind = .Int, default = {i = 900}, min = 320, max = 4000, bounded = true, value_kind = .Length, unit = .Pixel, tags = {"size", "window"}},
+	{name = "window.height", title = i18n.later("Height"), description = i18n.later("The window's height at its first start, in logical pixels."), kind = .Int, default = {i = 560}, min = 240, max = 4000, bounded = true, value_kind = .Length, unit = .Pixel, tags = {"size", "window"}},
 }
 
 // The values the program reads, copied out of the registry (prefs_read).

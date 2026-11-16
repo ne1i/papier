@@ -287,9 +287,6 @@ fr Âge maximal
 en Entries older than this many days go, pinned ones aside. 0: no limit.
 fr Les éléments plus anciens que ce nombre de jours sont supprimés, hors éléments épinglés. 0 : sans limite.
 
-en days
-fr jours
-
 en Persist
 fr Conserver
 
@@ -331,9 +328,6 @@ fr Taille maximale
 
 en A representation larger than this is not recorded.
 fr Une représentation plus grande que cette taille n'est pas enregistrée.
-
-en bytes
-fr octets
 
 en Ignore secrets
 fr Ignorer les secrets
