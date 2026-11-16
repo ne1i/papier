@@ -61,6 +61,7 @@
       freetype
       dbus
       tesseract
+      curl # gt:http opens libcurl at run time: the updates, and the live check's DevTools WebSocket
     ];
 
     # tesseract's language data: gt:ocr reads $TESSDATA_PREFIX first
