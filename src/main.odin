@@ -17,7 +17,7 @@ import setup "gt:setup"
 import timefmt "gt:timefmt"
 import "history"
 
-APP_VERSION :: "0.34.0"
+APP_VERSION :: "0.35.0"
 // What changed, version by version: the settings' What's new page (in the program, beside its site's changelog).
 CHANGELOG :: #load("../CHANGELOG.md", string)
 
