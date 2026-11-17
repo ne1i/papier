@@ -36,8 +36,9 @@ Night, Catppuccin, Rosé Pine, Kanagawa, One Dark, Solarized…), or one of your
 
 `appearance.text.ui_font`, `appearance.text.mono_font` (the text of the entries) and `appearance.text.prose_font` (a
 Markdown entry's text) apply at once, in every window: gui_toolkit loads the family and swaps it in. Papier reads
-`appearance.text.emoji_font` at the start. `general.menu` and `general.autostart` are the install's
-(its dialog, the Installation page, `papier --install`).
+`appearance.text.emoji_font` at the start. `general.menu` and `general.autostart` (on by default) put the installed
+copy in the application menu and start it with the session; Settings > General shows them once this copy is the
+installed one.
 
 ## Papier's own
 

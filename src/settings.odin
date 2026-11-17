@@ -19,12 +19,13 @@ APP_TITLE :: "Papier"
 // src/md/features/folders.md). The runtime folder keeps APP_NAME: an old and a new copy still meet on its socket.
 APP_FOLDER :: "FromentSoftware" + platform.USER_DIR_SEPARATOR + APP_TITLE
 
-// papier's identity in the standard settings: its theme and its name. The rest is the toolkit's, as in its other
-// programs (prefs_page.STANDARD_DEFAULTS).
+// papier's identity in the standard settings: its theme, its name, and the start with the session, which a clipboard's
+// history needs to see the first copy (the installed copy follows it: prefs_page.install_follow). The rest is the
+// toolkit's, as in its other programs (prefs_page.STANDARD_DEFAULTS).
 @(private = "file")
 standard_defaults :: proc() -> prefs_page.Standard_Defaults {
 	d := prefs_page.STANDARD_DEFAULTS
-	d.theme, d.app_name = "Papier", APP_TITLE
+	d.theme, d.app_name, d.autostart = "Papier", APP_TITLE, true
 	return d
 }
 

@@ -22,9 +22,9 @@ settings_keys :: proc(app: ^App) {
 	if prefs_page.escape_leaves(&app.settings_page) { app.settings_open = false }
 }
 
-// The General page shows where papier says what it did and its language: general.menu and general.autostart are papier's
-// Setup's and `papier install`'s, which put the launcher and the start with the session in place.
-@(private = "file", rodata) GENERAL_NAMES := [?]string{prefs_page.MESSAGES_PREF, prefs_page.LANGUAGE_PREF}
+// The General page: the launcher in the application menu and the start with the session (the toolkit shows them for the
+// installed copy alone, prefs_page.install_follow), where papier says what it did, and its language.
+@(private = "file", rodata) GENERAL_NAMES := [?]string{prefs_page.MENU_PREF, prefs_page.AUTOSTART_PREF, prefs_page.MESSAGES_PREF, prefs_page.LANGUAGE_PREF}
 
 // The pages, their order and their icons: each a group of the registry (the first segment of a name). A page with no
 // preference on this system is left out (history and capture on Windows). The titles are English: the page translates
@@ -75,7 +75,7 @@ settings_options :: proc(app: ^App) -> prefs_page.Page_Options {
 		file = app.prefs_path,
 		version = APP_TITLE + " " + APP_VERSION,
 		themes = app.themes_file.all[:], themes_light = app.theme_shown.light, themes_file = &app.themes_file,
-		changelog = &app.changelog, licence = &app.licence, install = &app.install, diagnostics = &app.main,
+		changelog = &app.changelog, licence = &app.licence, install = &app.install, diagnostics = prefs_page.diagnostics_of(&app.main),
 	}
 }
 

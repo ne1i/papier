@@ -29,16 +29,17 @@ setup_options :: proc() -> setup.Setup_Options {
 		quit = proc() -> bool { return instance.quit({name = DAEMON_NAME}) },
 		prepare = proc(o: ^desktop.Integration_Options, choices: []bool, user: rawptr) {
 			papier_parts(o)
-			if len(choices) == len(SETUP_CHOICES) { o.autostart, o.add_to_path = choices[0], choices[1] }
+			if len(choices) == len(SETUP_CHOICES) { o.add_to_path = choices[0] }
 		},
 	}
 }
 
-// The boxes of the dialog, in the order prepare reads them (their labels in English: the dialog translates them).
+// The boxes of the dialog, in the order prepare reads them (their labels in English: the dialog translates them). The
+// start with the session has no box: general.autostart says it (prefs_page.install_follow applies it after each install),
+// and a box beside it would be a second answer the setting undoes.
 @(private = "file")
 SETUP_CHOICES := [?]setup.Choice{
-	{label = i18n.later("Start with the session, in the notification area"), on = true},
-	{label = i18n.later("Papier in the terminal (on the PATH)"), on = true},
+	{label = i18n.later("Papier in the terminal (on the PATH)"), on = true, parts = {.Path}},
 }
 
 // The install's view, the window shown (--setup, Settings > Apps' Uninstall), with its logo.

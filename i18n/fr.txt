@@ -404,9 +404,6 @@ fr Pointeur
 en Focus
 fr Fenêtre active
 
-en Start with the session, in the notification area
-fr Démarrer avec la session, dans la zone de notification
-
 en Papier in the terminal (on the PATH)
 fr Papier dans le terminal (dans le PATH)
 

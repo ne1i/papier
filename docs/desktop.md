@@ -11,7 +11,8 @@ Unzip the archive and start `papier.exe`: its Setup offers to install it for you
 session (the `Run` key of your user: `papier --hidden`, in the notification area) and the Settings > Apps entry. The
 same dialog repairs, upgrades (start the newer `papier.exe`) or removes the install: `papier --setup`, Settings >
 Apps > Papier > Uninstall, or papier's own settings, page Installation, which also says where everything is. Keep
-standalone runs the copy where it is, and the Setup does not ask again.
+standalone runs the copy where it is, and the Setup does not ask again. Settings > General > In the application menu
+and Start with the session add or remove the launcher and the start with the session of the installed copy.
 
 `papier --install` installs the copy without a window, `papier --uninstall` removes it. With the PATH comes `papier.com` beside `papier.exe`:
 papier has a window and no console of its own, so in cmd or PowerShell `papier` runs `papier.com`, which gives a command
@@ -39,6 +40,9 @@ copy, and the old entry goes).
 - a launcher in the applications menu, with its icons;
 - a link `~/.local/bin/papier`, so that `papier` works in a terminal and in a key binding;
 - the start with the session: `~/.config/autostart/papier.desktop` runs `papier --hidden`.
+
+Settings > General > In the application menu and Start with the session add or remove the launcher and the autostart
+entry of the installed copy. A copy from Nix does not show them: the Nix configuration integrates it.
 
 ```sh
 tar -xzf papier-0.1.0-linux-x64.tar.gz

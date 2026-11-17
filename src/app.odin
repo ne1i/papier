@@ -136,7 +136,9 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	app.prefs = prefs^
 	prefs^ = {}
 	app.settings = prefs_read(&app.prefs)
-	prefs_page.install_init(&app.install, &app.prefs, setup_options())
+	// (the toolkit follows general.menu and general.autostart for the installed copy; the announcer is made with the
+	// window below, before the install's reading can end)
+	prefs_page.install_init(&app.install, &app.prefs, setup_options(), &app.announcer)
 	// (general.language is in the registry now, and nothing is shown yet: every text from here on is in its language)
 	prefs_page.language_start(&app.prefs, PROGRAM_CATALOGUES)
 	config.user_writer_start(&app.prefs_writer, &app.prefs, prefs_file())
@@ -599,11 +601,18 @@ app_job_done :: proc(app: ^App, d: ^Job_Done) {
 		if d.ok {
 			// (the watch is the old registry's: let go before it goes, then made on the new one, which applies its values)
 			prefs_page.standard_unwatch(&app.standard)
+			// (the install's watch of general.menu and general.autostart is the old registry's too, and its id means
+			// another observer in the new one: let go here, so that install_init watches the new registry)
+			config.unwatch(&app.prefs, app.install.watch)
+			app.install.watch = 0
 			config.prefs_destroy(&app.prefs)
 			app.prefs, d.prefs, d.ok = d.prefs, {}, false
 			// (the new registry holds papier's own definitions only: the toolkit's install.choice is declared again, as
 			// at the start, and takes the value the file gave it)
-			prefs_page.install_init(&app.install, &app.prefs, setup_options())
+			prefs_page.install_init(&app.install, &app.prefs, setup_options(), &app.announcer)
+			// (install_init hid the two switches of the new registry: the installed copy shows them again, and the
+			// desktop follows what the file says now)
+			prefs_page.install_follow(&app.install)
 			prefs_page.standard_watch(&app.standard, &app.prefs, &app.main.state, app_standard_targets(app))
 			// (the file holds what was just read: the writer has nothing to write until the next change)
 			app.prefs_writer.version = app.prefs.user_version
