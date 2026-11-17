@@ -3,6 +3,11 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.33.0] - 2026-11-17 11:26
+
+### Changed
+- **Dialogs and menus of the new toolkit**: dialogs opened by a key appear at once, drop-down lists follow the rounding of the settings, and on Windows the window no longer freezes after it has loaded its fonts many times.
+
 ## [0.32.1] - 2026-11-16 22:08
 
 ### Fixed
@@ -510,6 +515,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.33.0]: https://github.com/sachahjkl/papier/releases/tag/v0.33.0
 [0.32.1]: https://github.com/sachahjkl/papier/releases/tag/v0.32.1
 [0.32.0]: https://github.com/sachahjkl/papier/releases/tag/v0.32.0
 [0.31.0]: https://github.com/sachahjkl/papier/releases/tag/v0.31.0
