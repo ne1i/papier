@@ -297,7 +297,7 @@ view_build :: proc(h: ^host.Host, size: host.Vec2) {
 	app.room = size.x / max(ui.scale(), 0.01)
 	app_shortcut_follow(app)
 	// (the user's themes file: a task looks at it now and then, and reads it when it changed; app_params shows it)
-	if prefs_page.themes_file_poll(&app.themes_file, &app.main.state) { app.main.settle = max(app.main.settle, FRAMES_AFTER_INPUT) }
+	if prefs_page.themes_file_poll(&app.themes_file, &app.main.state) { host.host_settle(&app.main) }
 	// (the dialogs, the floating views, the docked ones: around the page, and over it)
 	if ui.views_frame(&app.views) {
 		// (a view docked at a side narrows the page: its room is the content's, as the last layout made it)
@@ -548,7 +548,7 @@ build_status :: proc(app: ^App, em: f32) {
 		// (an update on offer, coming or in place: a button to act on it, where the eye goes)
 		ui.next({height = ui.px(ui.dense(em * (STATUS_EM - 0.45)))})
 		badge_w: f32
-		if b := prefs_page.update_badge(app.updater, proc(user: rawptr) { app_restart((^App)(user), hidden = false) }, app); b != nil {
+		if b := prefs_page.update_badge(app.updates.updater, proc(user: rawptr) { app_restart((^App)(user), hidden = false) }, app); b != nil {
 			badge_w = b.rect.max.x - b.rect.min.x + em * ui.CONTROL_GAP
 			ui.space(ui.CONTROL_GAP)
 		}

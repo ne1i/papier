@@ -26,7 +26,8 @@ the files, the tests) is [docs/architecture.md](../../docs/architecture.md).
 - The history's version: the watcher bumps it after each transaction; the window asks for the list when it moves.
 - A search: each query has a number; only the newest query's view is applied.
 - The selected entry: loading, then loaded; an edit asked while loading starts when the text comes.
-- The update: gt:update's `Updater`; once a new program is in place, papier ends at the next hide.
+- The update: gt:update's `Updater`, through `prefs_page.Updates` (it updates by itself only once the install's reading
+  says this is the installed copy); once a new program is in place, papier ends at the next hide.
 
 ## Subtleties
 

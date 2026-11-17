@@ -16,6 +16,11 @@ A second `papier` takes the instance name (`gt:instance`: a lock file and a Unix
 taken, sends its command (`show`, `toggle`, `copy 42`…) and ends. The compositor binds `papier toggle`; papier binds no
 global key of its own.
 
+- A start or a command waits the toolkit's `instance.WAIT_MS_DEFAULT` (2 s) for a papier that is starting or closing;
+  a silent one ends the wait at once. papier keeps no wait of its own: no command needs a shorter one.
+- An installer's `--status` and `--quit` are the toolkit's `instance.running` and `instance.quit`: the running papier
+  takes the toolkit's quit message as its own Quit.
+
 ## What the shortcut does
 
 `toggle` hides the window only when it is shown and has the keyboard (the platform window's `active`: its focus or

@@ -75,11 +75,13 @@ virtual list: it builds the rows in view, whatever the length of the history.
 
 ## Updates (src/updates.odin)
 
-gui_toolkit's `update.Updater` runs on a thread of its own: the installed copy checks the manifest of the latest release
-20 seconds after its start and then once a day, downloads the program it names, checks its size and SHA-256 against the
-manifest, whose Ed25519 signature it checked first, and puts it in place of the running program. The thread wakes the
-loop; the loop reads the state at each turn. Once the new program is in place, papier ends as soon as its window is
-hidden, and the new one starts hidden (`--hidden`). Settings > Updates shows the state (`prefs_page`'s update line).
+gui_toolkit's `update.Updater` runs on a thread of its own, started and followed by `prefs_page.updates_start` and
+`updates_follow`: the installed copy checks the manifest of the latest release 20 seconds after its start and then once
+a day, downloads the program it names, checks its size and SHA-256 against the manifest, whose Ed25519 signature it
+checked first, and puts it in place of the running program. The thread wakes the loop; the loop reads the state at each
+turn, and a task writes the new version into the install's record. Once the new program is in place, papier ends as
+soon as its window is hidden, and the new one starts hidden (`--hidden`). Settings > Updates shows the state
+(`prefs_page`'s update line).
 
 ## The settings (src/settings.odin, src/settings_view.odin)
 

@@ -96,7 +96,7 @@ start :: proc(prefs: ^config.Prefs, verb: string) -> cli.Exit {
 	if token := platform.activation_token_from_env(context.temp_allocator); token != "" && !hidden && !strings.contains_any(token, " \n") {
 		message = fmt.tprintf("%s %s", message, token)
 	}
-	outcome, owner := instance.acquire({name = DAEMON_NAME, wait_ms = 1500}, transmute([]u8)message)
+	outcome, owner := instance.acquire({name = DAEMON_NAME}, transmute([]u8)message)
 	switch outcome {
 	case .First:          return app_run(prefs, hidden, owner, setup_asked = verb == "--setup")
 	case .Forwarded:      return .Done

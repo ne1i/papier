@@ -14,6 +14,7 @@ package papier
 
 import desktop "gt:desktop"
 import i18n "gt:i18n"
+import instance "gt:instance"
 import prefs_page "gt:prefs_page"
 import setup "gt:setup"
 
@@ -22,7 +23,10 @@ setup_options :: proc() -> setup.Setup_Options {
 	return setup.Setup_Options{
 		identity = papier_identity(), version = APP_VERSION, icons = ICON_PNGS[:],
 		vendor_url = "https://froment.software",
-		choices = SETUP_CHOICES[:], running = daemon_running, quit = daemon_quit,
+		choices = SETUP_CHOICES[:],
+		running = proc() -> bool { return instance.running({name = DAEMON_NAME}) },
+		// (an installer's --quit: the running papier ends as its Quit does)
+		quit = proc() -> bool { return instance.quit({name = DAEMON_NAME}) },
 		prepare = proc(o: ^desktop.Integration_Options, choices: []bool, user: rawptr) {
 			papier_parts(o)
 			if len(choices) == len(SETUP_CHOICES) { o.autostart, o.add_to_path = choices[0], choices[1] }
@@ -37,15 +41,6 @@ SETUP_CHOICES := [?]setup.Choice{
 	{label = i18n.later("Papier in the terminal (on the PATH)"), on = true},
 }
 
-// Once the start's reading of the install came (prefs_page.install_offer): whether this is the installed copy, which
-// updates itself (update.auto).
-setup_follow :: proc(app: ^App) {
-	if app.setup_known || !app.install.known { return }
-	app.setup_known = true
-	app.installed_copy = app.install.running_it
-	app_updates_auto(app)
-}
-
 // The install's view, the window shown (--setup, Settings > Apps' Uninstall), with its logo.
 setup_open :: proc(app: ^App) {
 	if !app.logo_made { setup_logo(app) }
@@ -57,28 +52,23 @@ setup_open :: proc(app: ^App) {
 // task's answer, before a logo was made: it is made then, and the view draws it from its next build.
 setup_build :: proc(app: ^App) {
 	if prefs_page.install_open_now(&app.install) && !app.logo_made { setup_logo(app) }
-	setup_follow(app)
 	if prefs_page.install_frame(&app.install) == .Launched { app.quit = true }   // (the installed copy starts at the end: app_run)
 }
 
 // The logo of the view and the vendor's mark of its "By" line, textures of the window's renderer (made once, at the
-// view's first show or the settings' first build: the Installation page signs with the mark too; freed with the
-// window: setup_logo_destroy).
+// view's first show or the settings' first build: the Installation page signs with the mark too). The logo is freed
+// with the window (setup_logo_destroy), the mark by prefs_page.install_end.
 setup_logo :: proc(app: ^App) {
 	app.logo_made = true
 	if logo, ok := setup.logo_make(&app.shared.r, LOGO_PNG_LARGE, {f32(LOGO_SIZE), f32(LOGO_SIZE)}); ok { app.install.logo = logo }
-	if mark, ok := setup.logo_make(&app.shared.r, VENDOR_MARK_PNG, {16, 16}); ok { app.install.vendor_mark = mark }
-	// (a view already open draws with what setup.open got)
-	if app.install.dialog.open {
-		setup.set_logo(&app.install.dialog, app.install.logo)
-		setup.set_vendor_mark(&app.install.dialog, app.install.vendor_mark)
-	}
+	// (a view already open draws with what setup.open got: install_vendor_mark gives it the mark itself)
+	if app.install.dialog.open { setup.set_logo(&app.install.dialog, app.install.logo) }
+	prefs_page.install_vendor_mark(&app.install, &app.shared.r, VENDOR_MARK_PNG)
 }
 
 // Before the window's renderer goes.
 setup_logo_destroy :: proc(app: ^App) {
 	setup.logo_destroy(&app.shared.r, &app.install.logo)
-	setup.logo_destroy(&app.shared.r, &app.install.vendor_mark)
 }
 
 LOGO_SIZE :: 128

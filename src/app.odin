@@ -13,22 +13,20 @@ import "core:slice"
 import "core:time"
 import cli "gt:cli"
 import config "gt:config"
-import crash "gt:crash"
 import crash_bar "gt:crash_bar"
 import "gt:devtools"
 import "gt:font"
 import "gt:host"
 import i18n "gt:i18n"
 import instance "gt:instance"
-import tk_log "gt:log"
 import ocr "gt:ocr"
 import "gt:platform"
 import prefs_page "gt:prefs_page"
 import "gt:render"
 import setup "gt:setup"
 import "gt:ui"
-import update "gt:update"
 import lucide "gt:lucide"
+import papier_update "update"
 
 // papier's own texts in each language it speaks besides English (the toolkit's are the toolkit's).
 PROGRAM_CATALOGUES :: []i18n.Catalog{{"fr", #load("../i18n/fr.txt", string)}}
@@ -44,8 +42,7 @@ when PINS { FILTER_COUNT :: int(Filter.Pinned) + 1 } else { FILTER_COUNT :: int(
 // The tray menu's items.
 Tray_Item :: enum { None, Show, Clear, Quit }
 
-// Frames owed after an event, at a show (what it set off settles: the layout, the reveal of the selected row).
-FRAMES_AFTER_INPUT :: 3
+// Frames owed at a show (what it set off settles: the layout, the reveal of the selected row).
 FRAMES_AT_SHOW     :: 4
 
 App :: struct {
@@ -115,13 +112,10 @@ App :: struct {
 	room:       f32,                // the page's width at this build (the window's, but what views docked at a side take), logical pixels
 	install:    prefs_page.Install, // the install: its offer, its dialog, the settings' page (setup_view.odin)
 	changelog:  prefs_page.Changelog, // What's new: CHANGELOG.md on a page of the settings, said once after an update
-	setup_known: bool,              // the start's reading of the install came (setup_follow)
 	logo_made:  bool,               // the install's logo and vendor mark are made (setup_logo; kept in `install`)
 	launch_after: string,           // this program again after an update, started once this one has ended (owned; "": none)
 	launch_hidden: bool,            // and in the notification area (an update: updates.odin)
-	updater:    ^update.Updater,    // updates.odin
-	update_serial: int,             // the updater's state last said
-	installed_copy: bool,           // this program is the installed copy: it updates itself (update.auto)
+	updates:    prefs_page.Updates, // updates.odin
 	hotkey_held: bool,              // Windows: window.shortcut is registered
 	shortcut_problem: string,       // why it is not (owned; "": it is)
 	status:     string,             // a message for the status bar (owned), until status_until (ui clock, ms)
@@ -132,24 +126,13 @@ App :: struct {
 
 app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup_asked := false) -> cli.Exit {
 	// (the running papier's errors go to its log, written by a thread of its own; echoed on the standard error for a
-	// terminal and the live tests)
-	// (the file keeps the technical name; its folder is the vendor's)
-	logger := tk_log.install({program = APP_NAME, dir = tk_log.default_dir(APP_FOLDER, context.temp_allocator), echo = true})
-	context.logger = logger
-	defer {
-		context.logger = log.nil_logger()
-		tk_log.close(logger)
-	}
-	crash.install({program = APP_NAME, report_dir = crash.default_report_dir(APP_FOLDER, context.temp_allocator), version = APP_VERSION, log_tail = {tk_log.tail, logger.data}})
-	// (files read and written here, before the window exists)
-	crash.begin_session()
-	defer crash.end_session()   // (each return of this procedure is a clean end)
+	// terminal and the live tests; the log and the crash reports are read and written here, before the window exists)
+	p := host.program_start({name = APP_NAME, folder = APP_FOLDER, version = APP_VERSION})
+	context.logger = p.logger
+	defer host.program_end(&p)   // (each return of this procedure is a clean end)
 	app := new(App)
 	defer free(app)
-	if path, crashed := crash.last_report(context.temp_allocator); crashed {
-		log.warnf("papier: the last session ended in a crash: %s", path)
-		crash_bar.init(&app.crash_bar, path)
-	}
+	crash_bar.init(&app.crash_bar, p.last_crash)
 	app.prefs = prefs^
 	prefs^ = {}
 	app.settings = prefs_read(&app.prefs)
@@ -191,7 +174,6 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	// (Lucide: the icons of the palette and of the menus; the widgets' own marks have the toolkit's font)
 	h.state.icon_font = app.icons
 	app.vl.multi = true   // (Ctrl and Shift clicks and keys select several entries: Copy, Pin and Remove act on them)
-	h.after_input = FRAMES_AFTER_INPUT
 	h.params = app_params
 	h.input = app_input
 	// (a close, the compositor's or the title bar's, hides the window: papier lives in the tray)
@@ -211,8 +193,12 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	decoder_start(&app.decoder, win)
 	slow_start(&app.slow, win)
 	app_shortcut(app)
-	app_updates_start(app)
-	// (the install read on a task: setup_follow; offered on Windows, at a start that shows the window)
+	// (which copy runs comes with the install's reading below: updates_follow applies update.auto once it is known)
+	prefs_page.updates_start(&app.updates, {
+		product = papier_update.PRODUCT, repository = "sachahjkl/papier", version = APP_VERSION,
+		prefs = &app.prefs, install = &app.install, state = &h.state, window = win,
+	})
+	// (the install read on a task: it says which copy runs; offered on Windows, at a start that shows the window)
 	prefs_page.install_offer(&app.install, &h.state, offer = ODIN_OS == .Windows && !hidden && !setup_asked)
 	// (after an update, once: a message that stays opens the settings at What's new)
 	app.changelog.english = CHANGELOG
@@ -246,17 +232,17 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 		if app.visible { prefs_page.placement_track(&app.placement, &app.prefs, win, ui.now_ms()) }
 		config.user_writer_save(&app.prefs_writer, &app.prefs)
 		if config.user_writer_failed(&app.prefs_writer) { say(app, i18n.tr("The preferences cannot be written")) }
-		if app_follow_reader(app) { app.main.settle = max(app.main.settle, FRAMES_AFTER_INPUT) }
-		if view_decoded(app) { app.main.settle = max(app.main.settle, FRAMES_AFTER_INPUT) }
-		if app_ocr_follow(app) { app.main.settle = max(app.main.settle, FRAMES_AFTER_INPUT) }
-		if thumbs_take(app) { app.main.settle = max(app.main.settle, FRAMES_AFTER_INPUT) }
+		if app_follow_reader(app) { host.host_settle(h) }
+		if view_decoded(app) { host.host_settle(h) }
+		if app_ocr_follow(app) { host.host_settle(h) }
+		if thumbs_take(app) { host.host_settle(h) }
 		if app.visible && !app.hide_due && !app.quit && !platform.is_closed(win) { host.host_frame(h) }
 		drag_run(app)
 		if app.hide_due { app_hide_now(app) }
 	}
 
 	app_remember(app)
-	update.updater_stop(app.updater)
+	prefs_page.updates_stop(&app.updates)
 	watcher_stop(&app.watcher)   // (the instance is let go: the installed copy, started below, is the running papier)
 	decoder_stop(&app.decoder)
 	slow_stop(&app.slow)
@@ -609,10 +595,6 @@ app_job_done :: proc(app: ^App, d: ^Job_Done) {
 	#partial switch d.kind {
 	case .Drag:     drag_arrived(app, d)
 	case .Handlers: entry_menu_handlers(app, d)
-	case .Setup_Updated:
-		// (a log line, as an install's record is nothing the window shows)
-		if !d.ok { log.errorf("papier: the update is in place, but %s", d.message) }
-		return
 	case .Read_Prefs:
 		if d.ok {
 			// (the watch is the old registry's: let go before it goes, then made on the new one, which applies its values)
@@ -631,7 +613,6 @@ app_job_done :: proc(app: ^App, d: ^Job_Done) {
 			// (the palette's settings were read from the old registry: a policy may fix other ones in the new)
 			app.palette_state.settings.source.version += 1
 			app_shortcut(app)
-			app_updates_auto(app)
 			app_title_follow(app)
 		}
 	case .Join:

@@ -66,9 +66,7 @@ command_received :: proc(message: []byte) -> (c: Command, ok: bool) {
 	return command_parse(string(message))
 }
 
-SEND_WAIT_MS :: 1000
-
 // Sends `c` to the running papier. False when none runs.
 command_send :: proc(c: Command) -> bool {
-	return instance.send({name = DAEMON_NAME, wait_ms = SEND_WAIT_MS}, transmute([]u8)command_format(c)) == .Forwarded
+	return instance.send({name = DAEMON_NAME}, transmute([]u8)command_format(c)) == .Forwarded
 }

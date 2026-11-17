@@ -10,6 +10,7 @@ package papier
 // drag_start). Asked or ready goes back to idle when the press on the row ends first; ready runs at the next turn of the
 // loop, then idle.
 
+import "gt:host"
 import "gt:platform"
 import i18n "gt:i18n"
 import "gt:ui"
@@ -59,7 +60,7 @@ drag_run :: proc(app: ^App) {
 	defer drag_data_free(&data)
 	if platform.drag_data_empty(data) { return }
 	if _, ok := platform.drag_start(app.main.win, data, {.Copy}); !ok { say(app, i18n.tr("The entry cannot be dragged here")) }
-	app.main.settle = max(app.main.settle, FRAMES_AFTER_INPUT)
+	host.host_settle(&app.main)
 }
 
 drag_reset :: proc(app: ^App) {

@@ -1,17 +1,14 @@
 package papiertool
 
-// build, test, check: the program and its tests, the same steps on a laptop and in the CI.
+// build, test, check: the toolkit's (toolbox.build_commands), the same steps on a laptop and in the CI, with papier's
+// SQLite built first.
 
-import "core:fmt"
-import "core:os"
-import "core:strings"
 import changelog "gt:changelog"
-import cli "gt:cli"
 import toolbox "gt:toolbox"
 
 // The packages that have tests (this tool has none of its own: its steps are gui_toolkit's, tested there; check still
 // type-checks it).
-TEST_PACKAGES :: [?]string{"src", "src/history"}
+@(rodata) TESTS := [?]toolbox.Test_Package{{path = "src"}, {path = "src/history"}}
 
 // SQLite, from its amalgamation in ext/sqlite (3.54.1), compiled into build/sqlite/libsqlite3.a: the history's database
 // (src/sqlite links it). Built again when its sources or the flags below change (toolbox.build_c_lib's stamp).
@@ -25,7 +22,7 @@ SQLITE_FLAGS :: [?]string{
 }
 
 // Linux: SQLite as a static library (Windows reads the system's own history: no database).
-build_sqlite :: proc() -> bool {
+build_sqlite :: proc(_: toolbox.Project) -> bool {
 	when ODIN_OS == .Linux {
 		sources, flags := SQLITE_SOURCES, SQLITE_FLAGS
 		return toolbox.build_c_lib("sqlite3", sources[:], SQLITE_OUT, flags[:])
@@ -34,68 +31,7 @@ build_sqlite :: proc() -> bool {
 	}
 }
 
-// What a build or a test needs first: the toolkit's native libraries, the Lucide subset, on Windows the resource and the
-// console launcher (build_native), then SQLite.
-@(private = "file")
-build_parts :: proc(p: toolbox.Project) -> bool {
-	return toolbox.build_native(p) && build_sqlite()
-}
-
-run_build :: proc(args: []string) -> cli.Exit {
+build_options :: proc() -> toolbox.Build_Options {
 	p := project()
-	release := len(args) > 0 && args[0] == "release"
-	if !build_parts(p) { return .Failed }
-	_ = os.make_directory("build")
-	mode := release ? []string{"-o:speed"} : []string{"-debug"}
-	extra := make([dynamic]string, context.temp_allocator)
-	append(&extra, fmt.tprintf("-out:%s", PROGRAM))
-	append(&extra, ..mode)
-	// (Windows: no console of its own, none flashes at a start with the session; its text goes to the parent's: output.odin)
-	when ODIN_OS == .Windows {
-		if release { append(&extra, "-subsystem:windows") }
-	}
-	if !toolbox.run(toolbox.odin_command(p, "build", "", extra[:]), {echo = true}) { return .Failed }
-	fmt.printfln("built %s", PROGRAM)
-	return .Done
-}
-
-run_test :: proc(args: []string) -> cli.Exit {
-	p := project()
-	if !build_parts(p) { return .Failed }
-	_ = os.make_directory("build")
-	for pkg in TEST_PACKAGES {
-		name, _ := strings.replace_all(pkg, "/", "_", context.temp_allocator)
-		out := fmt.tprintf("-out:build/test_%s%s", name, ODIN_OS == .Windows ? ".exe" : "")
-		if !toolbox.run(toolbox.odin_command(p, "test", pkg, {out}), {echo = true}) { return .Failed }
-	}
-	return .Done
-}
-
-run_check :: proc(args: []string) -> cli.Exit {
-	p := project()
-	if !changelog_check(p) { return .Failed }
-	if !toolbox.check_scopes("src") { return .Failed }
-	// (a text of the code not in the catalogue, or not translated, shows in English to a French user)
-	if problem := toolbox.i18n_catalogue(I18N.dirs, "i18n/fr.txt", "fr", true); problem != "" { fmt.eprintln(problem); return .Failed }
-	if !toolbox.run(toolbox.odin_command(p, "check"), {echo = true}) { return .Failed }
-	// (the whole program for Windows and macOS too, from any system: code of another system that does not compile fails
-	// the Linux job)
-	when ODIN_OS != .Windows {
-		if !toolbox.check_windows(p) { return .Failed }
-		if !toolbox.check_darwin(p) { return .Failed }
-	}
-	if !toolbox.run({"odin", "check", "tools/papiertool", fmt.tprintf("-collection:gt=%s/src", toolbox.toolkit_dir(p)), "-vet"}, {echo = true}) { return .Failed }
-	if run_test(nil) != .Done { return .Failed }
-	if run_build({"release"}) != .Done { return .Failed }
-	return toolbox.ended(toolbox.check_launcher(p))
-}
-
-// The fragments of changelog.d/, as `changelog check` says them.
-@(private = "file")
-changelog_check :: proc(p: toolbox.Project) -> bool {
-	q := p
-	errors, n := changelog.check(changelog.project_options(&q))
-	for e in errors { fmt.eprintln("changelog:", e) }
-	if len(errors) == 0 { fmt.printfln("changelog: %d fragments, all well formed", n) }
-	return len(errors) == 0
+	return {project = p, changelog_command = changelog.command(p), tests = TESTS[:], catalogues = I18N, prepare = build_sqlite}
 }

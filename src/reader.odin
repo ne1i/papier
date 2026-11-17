@@ -31,7 +31,6 @@ import "gt:fsx"
 import i18n "gt:i18n"
 import "gt:markdown"
 import "gt:platform"
-import setup "gt:setup"
 import syntax "gt:syntax"
 import tasks "gt:tasks"
 import "gt:ui"
@@ -88,7 +87,6 @@ Job_Kind :: enum u8 {
 	Join,          // ids: the texts of several entries as one
 	Write,         // path, data: a file of the window (its state)
 	Read_Prefs,    // the preferences file, read again
-	Setup_Updated, // text: an update is in place: the install's record says its version
 }
 
 // A job for the reader (heap; the reader frees it).
@@ -726,10 +724,6 @@ reader_run_job :: proc(r: ^Reader, j: ^Job) -> (d: Job_Done) {
 	case .Read_Prefs:
 		prefs_open(&d.prefs, nil)
 		d.ok = true
-	case .Setup_Updated:
-		ok, why := setup.updated(setup_options(), j.text)
-		d.ok = ok
-		if !ok { d.message = strings.clone(why) }
 	case .Handlers:
 		// (the type is in the name: the file need not be written for its applications to be found)
 		d.handlers = desktop.handlers_for_file(j.path)

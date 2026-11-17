@@ -9,27 +9,6 @@ import toolbox "gt:toolbox"
 
 VERSION_MARK :: "{{version}}"
 
-// Where the site is published, what it is: the one place that says it.
-SITE_META :: tk_site.Meta{
-	url         = "https://papier.froment.software/",
-	name        = "Papier",
-	repository  = REPOSITORY,
-	tagline     = "A fast clipboard history, searched as you type",
-	changes     = "CHANGELOG.md",
-	card        = "img/main.png",
-	logo        = "img/logo.png",
-	logo_file   = "site/img/logo.png",
-	theme       = "#131315",
-	accent      = "#cbbca3",
-	author      = "Sacha Froment",
-	author_url  = "https://froment.software",
-	publisher   = "Froment Software",
-	ld_type     = "SoftwareApplication",
-	root_domain = false,   // (github.io answers for /robots.txt and /favicon.ico, not the site)
-	publisher_logo = "img/froment-software-64.png",
-	licence     = "MIT",
-}
-
 // The home page's download, for the reader's system (Windows first: what a phone or an unknown system is offered).
 @(rodata)
 SITE_DOWNLOADS := [?]tk_site.Download{
@@ -44,7 +23,8 @@ SITE_LD :: [?][2]string{
 }
 
 site_meta :: proc() -> tk_site.Meta {
-	m := SITE_META
+	// Where the site is published, what it is: the one place that says it (the vendor's fields are the toolkit's).
+	m := tk_site.meta_default(name = "Papier", url = "https://papier.froment.software/", repository = REPOSITORY, tagline = "A fast clipboard history, searched as you type", theme = "#131315", accent = "#cbbca3")
 	@(static) ld := SITE_LD
 	m.ld_fields = ld[:]   // (static: the site command keeps the Meta as long as the tool runs)
 	m.shop = SHOP
@@ -71,29 +51,13 @@ SHOP :: tk_site.Shop{
 	register       = "Open Papier's settings (Ctrl+,), the <b>General</b> page, <b>Licence</b>: paste the key, or choose the file.",
 	extension      = ".papierlicence",
 	repository     = REPOSITORY,
-	seller         = SELLER,
+	seller         = tk_site.SELLER_FROMENT,
 	code_licence   = "MIT License",
 	platform       = "Windows 10 or 11, x64, and Linux, x64 (Wayland).",
-	network        = "Papier connects to the network for its updates only: the installed copy asks GitHub for the latest release a while after it starts and then once a day, and puts an update in place only if it is signed by Froment Software. Another copy asks only when you press <em>Check now</em> in the settings.",
+	network        = tk_site.NETWORK_UPDATES_ONLY,
 	stylesheet     = "../style.css",
 	home           = "../",
 	updated        = "2026-11-13",
-}
-
-// The seller, as Wren's imprint names it: the same block in every program of Froment Software.
-SELLER :: tk_site.Seller{
-	name       = "Froment Software",
-	owner      = "Sacha Froment",
-	status     = "sole proprietor (<em>entrepreneur individuel</em>)",
-	address    = "7 Lieu-dit les Renardi&egrave;res, 72220 Marign&eacute;-Laill&eacute;, France",
-	email      = "contact@froment.software",
-	url        = "https://froment.software",
-	siren      = "131 941 718",
-	siret      = "131 941 718 00010",
-	ape        = "6201Z, computer programming",
-	registry   = "the French national register of companies (RNE)",
-	registered = "23 October 2026",
-	vat        = "not applicable, article 293 B of the French General Tax Code (<em>franchise en base de TVA</em>)",
 }
 
 // The site's command: the toolkit's, the shop's pages among the others (Meta.shop).

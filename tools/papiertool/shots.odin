@@ -11,6 +11,7 @@ import "core:os"
 import "core:strings"
 import cdp "gt:cdp"
 import cli "gt:cli"
+import toolbox "gt:toolbox"
 
 SHOTS_DIR     :: "build/shots"
 SHOTS_OUT     :: "docs/screenshots"
@@ -37,9 +38,9 @@ SAMPLES :: [?]Sample{
 run_shots :: proc(args: []string) -> cli.Exit {
 	out := SHOTS_OUT
 	if len(args) == 2 && args[0] == "--out" { out = args[1] }
-	if run_build({"release"}) != .Done { return .Failed }
-	s: Session
-	defer session_stop(&s)
+	if !toolbox.program_build(build_options(), release = true) { return .Failed }
+	s: toolbox.Program_Session
+	defer toolbox.program_session_stop(&s)
 	if why := session_start(&s, SHOTS_DIR, {"appearance.mode\tdark"}); why != "" { fmt.eprintfln("papiertool shots: %s", why); return .Failed }
 	samples := SAMPLES
 	for x in samples {
@@ -54,8 +55,8 @@ run_shots :: proc(args: []string) -> cli.Exit {
 
 	_ = os.make_directory_all(out)
 	_, _ = run_in(&s, PROGRAM, "show")
-	c, ok := window_connect(&s)
-	if !ok { fmt.eprintln("papiertool shots: the window does not answer"); return .Failed }
+	c, why := toolbox.program_session_connect(&s)
+	if why != "" { fmt.eprintfln("papiertool shots: %s", why); return .Failed }
 	defer cdp.close(&c)
 	failed := false
 	shot :: proc(c: ^cdp.Client, out, name: string, failed: ^bool) {
@@ -128,11 +129,12 @@ run_shots :: proc(args: []string) -> cli.Exit {
 	_, _ = run_in(&s, PROGRAM, "set", "appearance.mode", "light")
 	_, _ = run_in(&s, PROGRAM, "hide")
 	_, _ = run_in(&s, PROGRAM, "show")
-	if lc, lok := window_connect(&s); lok {
+	if lc, lwhy := toolbox.program_session_connect(&s); lwhy == "" {
 		cdp.wait_for(&lc, "proc fibonacci", SESSION_WAIT)
 		shot(&lc, out, "light", &failed)
 		cdp.close(&lc)
 	} else {
+		fmt.eprintfln("papiertool shots: %s", lwhy)
 		failed = true
 	}
 	if failed { return .Failed }

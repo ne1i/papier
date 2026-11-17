@@ -5,7 +5,7 @@ package papiertool
 // last copy), parted from the front one by a gap; each sheet a soft vertical gradient of paper with a darker edge; the
 // folded corner lighter; the lines of the text cut out. Small sizes drop the lines that would blur (detail_for).
 // assets/logo.png (1024 px), the sizes the program and the site embed, papier.ico and .project/image.png: the toolkit's
-// toolbox.write_logo writes them from logo_render.
+// toolbox.write_logo writes them from logo_draw: it draws each size large, then shrinks it.
 
 import paint "gt:paint"
 import toolbox "gt:toolbox"
@@ -21,8 +21,6 @@ LOGO_UNITS  :: 512.0
 // The transparent space between the sheets, and the width of an edge, in units.
 LOGO_GAP    :: 22.0
 LOGO_EDGE   :: 12.0
-// Small sizes are drawn from a master this many times larger, in one step of the cubic filter at most this factor.
-LOGO_SHRINK_STEP :: 4
 
 // The colours: top and bottom of each gradient, and the edges.
 FRONT_TOP    :: 0xEFE9DF
@@ -80,9 +78,11 @@ shape :: proc(c: ^paint.Canvas, p: paint.Path, y0, y1: f32, top, bottom, edge: u
 // 2: everything (64 px and up); 1: two lines of text, wider (32 to 48); 0: no line (16 to 24).
 detail_for :: proc(size: int) -> int { return size <= 24 ? 0 : size <= 48 ? 1 : 2 }
 
-logo_draw :: proc(size: int, detail: int) -> paint.Canvas {
-	c := paint.canvas_make(size, size)
-	k := f32(size) / LOGO_UNITS
+// The picture `pixels` wide, with the detail it keeps once shrunk to `size`.
+logo_draw :: proc(pixels, size: int, _: rawptr) -> paint.Canvas {
+	detail := detail_for(size)
+	c := paint.canvas_make(pixels, pixels)
+	k := f32(pixels) / LOGO_UNITS
 	c.transform = paint.scale(paint.IDENTITY, k, k)
 
 	// the sheet behind, turned a little
@@ -127,25 +127,11 @@ logo_draw :: proc(size: int, detail: int) -> paint.Canvas {
 	return c
 }
 
-// The picture at `size`: drawn large, then shrunk in steps the cubic filter keeps clean.
-logo_render :: proc(size: int) -> paint.Canvas {
-	n := size
-	for n < LOGO_MASTER { n *= LOGO_SHRINK_STEP }
-	c := logo_draw(n, detail_for(size))
-	for n > size {
-		next := max(n / LOGO_SHRINK_STEP, size)
-		small := paint.resize(c, next, next)
-		paint.canvas_destroy(&c)
-		c, n = small, next
-	}
-	return c
-}
-
 // The files of the logo (the `logo` command): assets/logo*.png, papier.ico and .project/image.png.
 logo :: proc() -> toolbox.Logo {
 	@(static) sizes := LOGO_SIZES
 	return {
-		render = proc(size: int, _: rawptr) -> paint.Canvas { return logo_render(size) },
+		draw = logo_draw,
 		dir = LOGO_DIR, master = LOGO_MASTER, sizes = sizes[:], ico = LOGO_ICO, project_image = true,
 	}
 }

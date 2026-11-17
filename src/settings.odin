@@ -55,7 +55,6 @@ Settings :: struct {
 	size:           [2]int,
 	shortcut:       string,   // Windows: window.shortcut
 	follow:         platform.Active_Monitor,   // Windows: window.follow
-	update_auto:    bool,
 	system_title:   bool,     // window.system_title
 	messages:       ui.Announce_Mode,   // general.messages: where "Copied", "Saved"... are said
 }
@@ -107,7 +106,6 @@ prefs_read :: proc(p: ^config.Prefs, allocator := context.allocator) -> (s: Sett
 	s.look = prefs_page.appearance_read(p, allocator)
 	s.system_title = config.bool_of(p, prefs_page.SYSTEM_TITLE_PREF)
 	s.size = {int(config.int_of(p, "window.width")), int(config.int_of(p, "window.height"))}
-	s.update_auto = config.bool_of(p, prefs_page.UPDATE_AUTO_PREF)
 	s.messages = prefs_page.announce_mode(p)
 	prefs_read_system(p, &s, allocator)
 	return

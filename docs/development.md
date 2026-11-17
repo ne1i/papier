@@ -22,9 +22,9 @@ odin run tools/papiertool -collection:gt=ext/gui_toolkit/src -out:build/papierto
 
 | Command | What it does |
 |---|---|
-| `build [release]` | the toolkit's text library and SQLite (when their sources changed), then `build/papier` |
-| `test` | the unit tests of `src` and `src/history` |
-| `check` | the changelog's fragments, the scopes, `odin check -vet` of the program for this system and for Windows and of the tool, the tests, a release build |
+| `build [release]` | the toolkit's text library and SQLite (when their sources changed), then `build/papier` (debug, unoptimised; `release`: optimised, what ships) |
+| `test [names]` | the unit tests of `src` and `src/history`; `names` (`papier.test_a,papier.test_b`): those tests of `src` alone |
+| `check` | the changelog's fragments and the roadmap, the scopes, the catalogues of `i18n/`, `odin check` of the program for this system, Windows and macOS and of the tool (`-vet`), the tests, a release build (on Windows, its launcher) |
 | `changelog new <type> <text>`, `check`, `preview` | a fragment of `changelog.d/`, their check, what the next version brings |
 | `live [--keep]` | the real program in a headless sway, driven through wl-clipboard and the DevTools protocol |
 | `shots [--out folder]` | the pictures of the README and the site, the program's own frames |
@@ -34,6 +34,10 @@ odin run tools/papiertool -collection:gt=ext/gui_toolkit/src -out:build/papierto
 | `notes <version>` | the changelog's section of that version |
 | `ship <patch\|minor\|major\|x.y.z> [--dry-run]` | a release: see below |
 | `site build <site> <out>`, `site check`, `site card` | the site's pages, their check in a real browser, the card a shared link shows |
+
+`build`, `test` and `check` are gui_toolkit's (`toolbox.build_commands`, `tools/papiertool/build.odin`): papier adds
+SQLite to what they build first. `live` and `shots` run papier in the toolkit's program session
+(`toolbox.Program_Session`, `tools/papiertool/session.odin`).
 
 `GT=<folder>` builds against another checkout of gui_toolkit.
 

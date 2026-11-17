@@ -5,9 +5,10 @@ package papier
 // link in ~/.local/bin), and the start with the session, hidden in the notification area. The install puts them in
 // place for the installed copy (setup_view.odin: its dialog, the settings' Installation page, papier --install).
 
-import desktop "gt:desktop"
+import "base:runtime"
 import "core:os"
-import instance "gt:instance"
+import "core:sync"
+import desktop "gt:desktop"
 
 ICON_PNGS := [?]desktop.Icon{
 	{16, #load("../assets/logo_16.png")},
@@ -17,17 +18,19 @@ ICON_PNGS := [?]desktop.Icon{
 	{256, #load("../assets/logo_256.png")},
 }
 
+// The identity's derived strings are allocated: they are made once, for the whole run (the setup's jobs share them).
+@(private = "file") identity: desktop.Identity
+@(private = "file") identity_once: sync.Once
+
 papier_identity :: proc() -> desktop.Identity {
-	return desktop.Identity{
-		name = APP_TITLE, key = "Papier", slug = APP_NAME,
-		description = "The clipboard's history: text, rich text, images and files, searched and put back in a keystroke.",
-		vendor = "Froment Software",
-		entry_marker = "X-Papier-Integration", registry_mark = "PapierIntegration", vendor_key = "FromentSoftware",
-		manifest_name = "papier_install.txt",
-		generic_name = "Clipboard Manager", categories = "Utility;", keywords = "clipboard;history;copy;paste;",
-		env_prefix = "PAPIER_DESKTOP_",
-		uninstall_arguments = "--setup",   // (Settings > Apps: the install's dialog, its Uninstall)
-	}
+	sync.once_do(&identity_once, proc() {
+		id := desktop.identity_of("Froment Software", APP_TITLE, APP_NAME, runtime.heap_allocator())
+		id.description = "The clipboard's history: text, rich text, images and files, searched and put back in a keystroke."
+		id.generic_name, id.categories, id.keywords = "Clipboard Manager", "Utility;", "clipboard;history;copy;paste;"
+		id.uninstall_arguments = "--setup"   // (Settings > Apps: the install's dialog, its Uninstall)
+		identity = id
+	})
+	return identity
 }
 
 // papier's own parts of an install: the start with the session (hidden, in the notification area), papier on the PATH,
@@ -40,10 +43,3 @@ papier_parts :: proc(o: ^desktop.Integration_Options) {
 	desktop.roots_from_env(o, proc(name: string) -> string { return os.get_env(name, context.temp_allocator) })
 }
 
-// Whether a papier runs and answers.
-daemon_running :: proc() -> bool { return command_send({verb = .Ping}) }
-
-// The running papier asked to end as its Quit does (setup's --quit: an installer replaces it). True when it took it.
-daemon_quit :: proc() -> bool {
-	return instance.send({name = DAEMON_NAME, wait_ms = 2000}, transmute([]u8)string(instance.MESSAGE_QUIT)) == .Forwarded
-}

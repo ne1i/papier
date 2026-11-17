@@ -24,7 +24,7 @@ LIVE_DIR  :: "build/live"
 
 @(private = "file")
 Live :: struct {
-	using session: Session,
+	using session: toolbox.Program_Session,
 	failures:      int,
 	checks:        int,
 }
@@ -36,6 +36,15 @@ check :: proc(l: ^Live, ok: bool, what: string, args: ..any) {
 	if ok { fmt.printfln("  ok    %s", msg); return }
 	l.failures += 1
 	fmt.printfln("  FAIL  %s", msg)
+}
+
+// The window over the DevTools protocol, checked as `what`; a failure says why (the program ended, the port taken...).
+@(private = "file")
+live_connect :: proc(l: ^Live, what: string) -> (c: cdp.Client, ok: bool) {
+	why: string
+	c, why = toolbox.program_session_connect(&l.session)
+	check(l, why == "", "%s%s", what, why == "" ? "" : fmt.tprintf(" (%s)", why))
+	return c, why == ""
 }
 
 // The fields of the line of `list` whose preview holds `text`: id, kind, age, preview.
@@ -56,11 +65,11 @@ line_count :: proc(list: string) -> int {
 
 run_live :: proc(args: []string) -> cli.Exit {
 	keep := len(args) > 0 && args[0] == "--keep"
-	if run_build(nil) != .Done { return .Failed }
+	if !toolbox.program_build(build_options()) { return .Failed }
 	l: Live
 	if why := session_start(&l.session, LIVE_DIR); why != "" {
 		fmt.eprintfln("papiertool live: %s", why)
-		session_stop(&l.session)
+		toolbox.program_session_stop(&l.session)
 		return .Failed
 	}
 	dir := strings.clone(l.dir, context.temp_allocator)
@@ -70,7 +79,7 @@ run_live :: proc(args: []string) -> cli.Exit {
 	live_window(&l)
 	live_preview(&l)
 	live_toggle(&l)
-	code := session_stop(&l.session)
+	code := toolbox.program_session_stop(&l.session)
 	check(&l, code == 0, "papier quit: it ends, with 0 (%d)", code)
 	log, _ := os.read_entire_file(fmt.tprintf("%s/papier.log", dir), context.temp_allocator)
 	check(&l, !strings.contains(string(log), "error"), "papier wrote no error (%s/papier.log)", dir)
@@ -179,8 +188,7 @@ live_image_menu :: proc(l: ^Live, c: ^cdp.Client) {
 live_window :: proc(l: ^Live) {
 	_, code := run_in(l, PROGRAM, "show")
 	check(l, code == 0, "papier show")
-	c, ok := window_connect(l)
-	check(l, ok, "the window serves the DevTools protocol")
+	c, ok := live_connect(l, "the window serves the DevTools protocol")
 	if !ok { return }
 	check(l, cdp.wait_for(&c, "hello from papier live", SESSION_WAIT), "the window lists the history")
 	check(l, cdp.shot(&c, fmt.tprintf("%s/window.png", l.dir)), "a picture of the window")
@@ -234,8 +242,13 @@ live_window :: proc(l: ^Live) {
 		time.sleep(100 * time.Millisecond)
 	}
 	check(l, saved, "the theme is in %s/prefs", cfg)
-	time.sleep(300 * time.Millisecond)   // (the running papier reads its preferences again)
-	prefs, _ := run_in(l, PROGRAM, "prefs")
+	prefs: string
+	deadline := time.tick_add(time.tick_now(), SESSION_WAIT)
+	for time.tick_diff(time.tick_now(), deadline) > 0 {
+		prefs, _ = run_in(l, PROGRAM, "prefs")
+		if strings.contains(prefs, "appearance.theme = Graphite") { break }
+		time.sleep(SESSION_POLL)
+	}
 	check(l, strings.contains(prefs, "appearance.theme = Graphite"), "papier prefs: appearance.theme is Graphite after the reload")
 	check(l, cdp.key(&c, "ctrl+,"), "Ctrl+, again")
 	check(l, cdp.wait_for(&c, EDITED, SESSION_WAIT), "the history is back")
@@ -256,8 +269,9 @@ live_window :: proc(l: ^Live) {
 		time.sleep(100 * time.Millisecond)
 	}
 	check(l, pasted, "it is on the clipboard (%q)", got[:min(len(got), 60)])
-	time.sleep(300 * time.Millisecond)
-	plog, _ := os.read_entire_file(fmt.tprintf("%s/papier.log", l.dir), context.temp_allocator)
+	// (papier presses the keys once its window is hidden: the log says a failure from then on)
+	check(l, wait_papier_window(l, mapped = false, focused = false), "the window hides")
+	plog, _ := os.read_entire_file(l.log, context.temp_allocator)
 	check(l, !strings.contains(string(plog), "press keys"), "papier pressed the paste keys (%s/papier.log)", l.dir)
 	cdp.close(&c)
 
@@ -266,8 +280,7 @@ live_window :: proc(l: ^Live) {
 		check(l, hcode == 0, "round %d: papier hide", round)
 		_, scode := run_in(l, PROGRAM, "show")
 		check(l, scode == 0, "round %d: papier show", round)
-		rc, rok := window_connect(l)
-		check(l, rok, "round %d: the DevTools server takes a connection", round)
+		rc, rok := live_connect(l, fmt.tprintf("round %d: the DevTools server takes a connection", round))
 		if !rok { continue }
 		// (a show starts from an empty search: the first entry is back)
 		asked := time.tick_now()
@@ -288,8 +301,7 @@ live_preview :: proc(l: ^Live) {
 	check(l, copy_and_wait(l, strings.to_string(b), seen = TOP), "a long Markdown text is in the history")
 	_, code := run_in(l, PROGRAM, "show")
 	check(l, code == 0, "papier show")
-	c, ok := window_connect(l)
-	check(l, ok, "the window serves the DevTools protocol")
+	c, ok := live_connect(l, "the window serves the DevTools protocol")
 	if !ok { return }
 	defer cdp.close(&c)
 	check(l, cdp.type_text(&c, "long preview"), "search the long entry")
