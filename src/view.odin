@@ -573,7 +573,8 @@ build_status :: proc(app: ^App, em: f32) {
 				hints := app.edit.active ? EDIT_HINTS[:] : LIST_HINTS[:]
 				font_now := ui.top_style().font
 				size_now := ui.font_size()
-				room := app.room * ui.scale() - em * (ui.SPACE_3 + ui.SPACE_1) - badge_w - ui.text_width(font_now, size_now, msg) - em * 1.5
+				// (the status and the hints are two groups: a group's gap is kept between them)
+				room := app.room * ui.scale() - em * (ui.SPACE_3 + ui.SPACE_1) - badge_w - ui.text_width(font_now, size_now, msg) - em * ui.GROUP_GAP
 				for hint, i in hints {
 					key := ui.chord_text(hint.key)
 					label := i18n.tr(hint.label)

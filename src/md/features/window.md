@@ -28,6 +28,16 @@ date. These rules keep what the window shows consistent.
   it. The decoder reads the picture for a QR code too, and gives its text with the picture.
 - A text, Markdown or code scrolls in a `scroll_y` box. What it holds is sized by its children (`children_sum`): papier's
   base style gives a box a control's height, and content cut to it never overflows the box, which then does not scroll.
+- What a text is (plain, code, Markdown, a diff) is `syntax.guess`'s answer, given by the reader with the text. A text
+  that is only a table (a header row of `|` cells, then a row of `---` cells, `:` for the alignment) is Markdown: the
+  toolkit's guess knows that shape. A text with `|` and no such separator row stays plain: a pipe alone is no table.
+- A Markdown doc is read on the reader's thread, once per answer. Each closed ```` ```mermaid ```` block is laid out
+  there too (`diagrams_make`), for the light and the dark theme: a layout takes milliseconds, and a theme change then
+  lays out nothing. The window only draws the picture of the theme shown. At most 32 diagrams are laid out per entry;
+  the blocks after them show as code.
+- The diagrams go through `markdown.View_Options.code`, the toolkit's hook for a fenced block: papier draws no Markdown
+  of its own. The view finds a block's diagram by its number among the fenced blocks (`markdown.Code.fence`), not by its
+  text. A block that is no diagram shows its code, with mermaid's reason above it.
 - The keyboard stays in the search, so Page Up / Page Down move in the list and Shift with them scrolls the preview. A
   focusable preview was refused: a click on it would take the keyboard from the search, where typing must go.
 
