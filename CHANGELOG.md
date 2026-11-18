@@ -3,6 +3,11 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.36.1] - 2026-11-18 08:31
+
+### Fixed
+- **Settings saved on Windows while another program reads them**: an antivirus or the indexer holding the settings file no longer makes a change get lost.
+
 ## [0.36.0] - 2026-11-18 00:14
 
 ### Added
@@ -533,6 +538,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.36.1]: https://github.com/sachahjkl/papier/releases/tag/v0.36.1
 [0.36.0]: https://github.com/sachahjkl/papier/releases/tag/v0.36.0
 [0.35.0]: https://github.com/sachahjkl/papier/releases/tag/v0.35.0
 [0.34.0]: https://github.com/sachahjkl/papier/releases/tag/v0.34.0
