@@ -3,6 +3,11 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.37.1] - 2026-11-18 14:01
+
+### Fixed
+- **Packages of 0.37.0**: its release stopped before its packages were built; this version publishes them, with the Old Head theme.
+
 ## [0.37.0] - 2026-11-18 13:34
 
 ### Added
@@ -546,6 +551,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.37.1]: https://github.com/sachahjkl/papier/releases/tag/v0.37.1
 [0.37.0]: https://github.com/sachahjkl/papier/releases/tag/v0.37.0
 [0.36.1]: https://github.com/sachahjkl/papier/releases/tag/v0.36.1
 [0.36.0]: https://github.com/sachahjkl/papier/releases/tag/v0.36.0
