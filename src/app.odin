@@ -711,7 +711,7 @@ THEME_PAPIER :: ui.Theme_Def{"Papier",
 		{0xcbbca3ff, 0x8fa9c9ff, 0xa99bc4ff, 0x46a758ff, 0xf5a524ff, 0xe5484dff, 0x95c3c8ff, 0xc9a0b4ff}},
 	{{0xebe7dfff, 0xf6f3edff, 0xffffffff, 0xffffffff, 0xeeeae2ff, 0xe0dbd1ff}, {0xa39e95ff, 0x6f6a63ff, 0x1b1b1fff, 0x000000ff},
 		{0x8a7a62ff, 0x3d6a9eff, 0x6b56a3ff, 0x2f8f46ff, 0xc98a10ff, 0xd93d42ff, 0x2f7c86ff, 0xa64a72ff}},
-	.Both, nil, false, 0}
+	.Both, nil, false, 0, {}}
 
 // The themes the window can show: papier's, then the toolkit's (gui_toolkit docs/themes.md).
 themes :: proc() -> []ui.Theme_Def {
