@@ -57,7 +57,8 @@ rail_start :: proc(t: ^testing.T, r: ^Rail_Test) -> ^session.Session {
 	}
 	app.ids_version = 1
 	select_row(app, 0)
-	s := session.start(t, {size = RAIL_WIDE, user = r, build = rail_build})
+	// (no renderer: these tests read the layout only, and the release machine has no offscreen device)
+	s := session.start(t, {size = RAIL_WIDE, user = r, build = rail_build, no_renderer = true})
 	session.frames(s, 3)
 	return s
 }
@@ -101,7 +102,6 @@ the_list_folds_to_its_rail_in_a_narrow_window :: proc(t: ^testing.T) {
 	app := r.app
 	testing.expect(t, !railed(s, &r), "wide: the list open")
 	open_at := fold_button_at(s)
-	session.save_png(s, "papier-open.png")
 
 	app.state_due = false
 	session.resize(s, RAIL_NARROW)
@@ -110,7 +110,6 @@ the_list_folds_to_its_rail_in_a_narrow_window :: proc(t: ^testing.T) {
 	testing.expectf(t, app.remembered.side.fold == {folded = true, narrow = true}, "the automatic state: %v", app.remembered.side.fold)
 	testing.expect(t, app.state_due, "a crossing asks a write")
 	testing.expectf(t, fold_button_at(s) == open_at, "the fold button at its pixel: %v, open %v", fold_button_at(s), open_at)
-	session.save_png(s, "papier-rail.png")
 
 	session.resize(s, RAIL_WIDE)
 	session.frames(s, 2)
