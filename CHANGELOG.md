@@ -3,6 +3,14 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.37.0] - 2026-11-18 13:34
+
+### Added
+- **Old Head theme**: square corners, two-tone bevels, a dotted focus and white on navy selections, in the theme list.
+
+### Changed
+- **The list folds to a rail in a narrow window**: when the window leaves the entry too little room, the list becomes a column of the entries' icons (the selected one lit, a pinned one in the accent colour, each with its first line as a tooltip); Up and Down still move in it, and a click, a double click and the menu act as in the list. It opens again when the window is wide enough. The panel button after papier's icon folds or opens the list, and a pull of the rail's edge opens it; that choice holds until the window next crosses that width. Papier remembers the fold with the list's width.
+
 ## [0.36.1] - 2026-11-18 08:31
 
 ### Fixed
@@ -538,6 +546,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.37.0]: https://github.com/sachahjkl/papier/releases/tag/v0.37.0
 [0.36.1]: https://github.com/sachahjkl/papier/releases/tag/v0.36.1
 [0.36.0]: https://github.com/sachahjkl/papier/releases/tag/v0.36.0
 [0.35.0]: https://github.com/sachahjkl/papier/releases/tag/v0.35.0
