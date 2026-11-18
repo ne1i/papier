@@ -3,6 +3,14 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.36.0] - 2026-11-18 00:14
+
+### Added
+- **The application menu and the start with the session in Settings > General**: the installed copy shows "In the
+application menu" and "Start with the session", and each change adds or removes its launcher or its start with the
+session at once. The install's dialog no longer has its own "Start with the session" box: the setting says it, on by
+default.
+
 ## [0.35.0] - 2026-11-17 20:49
 
 ### Changed
@@ -525,6 +533,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.36.0]: https://github.com/sachahjkl/papier/releases/tag/v0.36.0
 [0.35.0]: https://github.com/sachahjkl/papier/releases/tag/v0.35.0
 [0.34.0]: https://github.com/sachahjkl/papier/releases/tag/v0.34.0
 [0.33.0]: https://github.com/sachahjkl/papier/releases/tag/v0.33.0
