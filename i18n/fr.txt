@@ -413,6 +413,12 @@ fr Texte enrichi
 en Data
 fr Données
 
+en Fold the list
+fr Replier la liste
+
+en Open the list
+fr Ouvrir la liste
+
 en Back to the history
 fr Retour à l'historique
 

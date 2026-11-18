@@ -40,16 +40,19 @@ VIEW_TEXT_MAX_BYTES :: 16 * 1024
 PAGE_ROWS :: 10
 // Builds a selected row is pulled into view for (as the list's own keys do).
 REVEAL_BUILDS :: 3
-// The list's width when none was chosen, of the window's; its least and the preview's least, in logical pixels.
+// The list's width when none was chosen, of the window's; its least and the preview's least, in logical pixels: under
+// the preview's least, the list folds to its rail.
 LIST_SHARE    :: 0.48
 LIST_MIN_PX   :: 220
 VIEW_MIN_PX   :: 200
+// The width of the list's rail, in ems: a row's mark and a little room on each side.
+RAIL_EM       :: 3.1
 // The heights of the bars and the rows, in ems.
 FIELD_EM  :: 1.95   // the search and the filters
 HALO_ROOM_PX :: 2   // logical pixels past the halo's reach before the bar's rule
-// The title bar's parts other than the search and the filter (its icon, the grip, two buttons, the spaces), and the
-// least the search keeps: under that, the filter goes to a row of its own.
-TITLE_FIXED_EM :: 10.3
+// The title bar's parts other than the search and the filter (its icon, the list's fold button, the grip, two buttons,
+// the spaces), and the least the search keeps: under that, the filter goes to a row of its own.
+TITLE_FIXED_EM :: 10.3 + ui.SIDE_ICON_EM + ui.TOOL_GAP
 SEARCH_MIN_EM  :: 10
 ROW_EM    :: 2.05
 MARK_EM   :: 2.6    // a row's mark: its kind's icon, or an image's thumbnail
@@ -261,7 +264,6 @@ view_keys :: proc(app: ^App) {
 }
 
 // The moves of the list while the search has the keyboard.
-@(private = "file")
 move_keys :: proc(app: ^App) {
 	n := len(app.shown)
 	if n == 0 { return }
@@ -325,7 +327,7 @@ views_open :: proc(app: ^App) -> bool {
 		prefs_page.install_open_now(&app.install)
 }
 
-@(private = "file")
+// The page under the views: the title bar, the list and its entry, the status bar.
 build_page :: proc(app: ^App, em: f32) {
 	build_title(app, em)
 	ui.hline(ui.fill())
@@ -380,6 +382,15 @@ build_title :: proc(app: ^App, em: f32) {
 		ui.space(ui.SPACE_2)
 		glyph(app, lucide.CLIPBOARD, em * 1.8, ui.color("accent"))
 		ui.space(ui.ICON_GAP)
+		// (the list's fold button: the list's first row is an entry, which scrolls; here it is above the list, at the same
+		// pixel open and folded)
+		if !app.settings_open {
+			side := &app.remembered.side
+			if ui.side_fold_button("###fold", side.fold.folded, false, i18n.tr("Fold the list"), i18n.tr("Open the list")).clicked {
+				if ui.side_fold_set(&side.fold, !side.fold.folded) { app.state_due = true }
+			}
+			ui.space(ui.TOOL_GAP)
+		}
 		if app.settings_open {
 			// the page has its own search: the title says where one is, its empty part moves the window
 			ui.next({width = ui.fill(), height = ui.pct(1)})
@@ -472,23 +483,29 @@ grip_draw :: proc(b: ^ui.Box, user: rawptr, dc: ^draw.Context) {
 	}
 }
 
+// The list beside the preview (src/md/features/window.md): the toolkit's foldable side panel, in logical pixels.
 @(private = "file")
 build_body :: proc(app: ^App, em: f32) {
 	scale := ui.scale()
 	room := app.room   // the window's width, logical pixels
-	if app.remembered.split <= 0 { app.remembered.split = max(room * LIST_SHARE, LIST_MIN_PX) }
-	app.remembered.split = clamp(app.remembered.split, LIST_MIN_PX, max(room - VIEW_MIN_PX, LIST_MIN_PX))   // (a window made narrower)
-	ui.next({width = ui.px(app.remembered.split * scale), height = ui.fill()})
-	build_list(app, em)
+	side := &app.remembered.side
 	// (flush: the list and the entry's pane meet at its rule, whose lines join theirs; it is grabbed wider than it is drawn)
-	ui.splitter("###split", .X, &app.remembered.split, LIST_MIN_PX, max(room - VIEW_MIN_PX, LIST_MIN_PX),
-		{default_size = room * LIST_SHARE, total = room, min_other = VIEW_MIN_PX, flush = true})
+	o := ui.Side_Panel_Options{default_width = max(room * LIST_SHARE, LIST_MIN_PX), min_width = LIST_MIN_PX,
+		rail = em * RAIL_EM / max(scale, 0.01), content_min = VIEW_MIN_PX, flush = true}
+	w, folded, crossed := ui.side_panel_begin(side, room * scale, o)
+	app.list_width = w
+	ui.next({width = ui.px(w), height = ui.fill()})
+	build_list(app, em, folded)
+	h := ui.side_panel_handle("###split", side, room * scale, o)
+	if crossed || h.fold_changed || h.finished { app.state_due = true }
 	ui.next({width = ui.fill(), height = ui.fill()})
 	build_view(app, em)
 }
 
+// The list, or its rail when folded: the same vlist and state, so the selection, the scroll and the keys are one; a
+// rail's row shows its mark alone, its first line as the tooltip.
 @(private = "file")
-build_list :: proc(app: ^App, em: f32) {
+build_list :: proc(app: ^App, em: f32, folded: bool) {
 	drag_build_begin(app)
 	rows, ok := ui.vlist("###list", &app.vl, app.ids[:], ids_version = app.ids_version)
 	if !ok { return }
@@ -499,7 +516,23 @@ build_list :: proc(app: ^App, em: f32) {
 		e := &app.list.entries[app.shown[i]]
 		ui.next({height = ui.px(ui.dense(em * ROW_EM))})
 		row := ui.list_row(&app.vl, i, "")
-		if ui.parent(row.box) {
+		if folded {
+			if ui.parent(row.box) {
+				ui.spacer(ui.fill())
+				if !has_thumb(e) || !thumb_mark(app, e, em * MARK_EM) {
+					// (pinned: the accent, as the list's pin; the rail has no room for a second mark)
+					if e.pinned {
+						glyph(app, KIND_ICONS[e.kind], em * MARK_EM, ui.color("accent"))
+					} else if ui.tags("weak") {
+						glyph(app, KIND_ICONS[e.kind], em * MARK_EM)
+					}
+				}
+				ui.spacer(ui.fill())
+			}
+			if ui.hovered_for(row) {
+				if ui.tooltip() { ui.tooltip_text(one_line(e.preview, 200)) }
+			}
+		} else if ui.parent(row.box) {
 			ui.space(ui.SPACE_1)
 			// (an image, a copied file: its thumbnail once made, its kind's mark until then)
 			if !has_thumb(e) || !thumb_mark(app, e, em * MARK_EM) {
@@ -530,7 +563,8 @@ build_list :: proc(app: ^App, em: f32) {
 			entry_menu_open(app, e, ui.mouse_pos())
 		}
 	}
-	if len(app.shown) == 0 {
+	// (the rail has no room for a sentence: its empty column says it, and the status bar counts the entries)
+	if len(app.shown) == 0 && !folded {
 		if ui.tags("weak") {
 			ui.next({width = ui.fill(), height = ui.px(em * 5)})
 			if ui.style({text_align = .Center}) {
@@ -668,7 +702,8 @@ view_decoded :: proc(app: ^App) -> bool {
 
 @(private = "file")
 build_view :: proc(app: ^App, em: f32) {
-	panel := ui.build_box({.Draw_Background, .Clip}, "###view")
+	// (.Fits_Width: its width is what the list leaves; a long line or a picture in it asks the row for none)
+	panel := ui.build_box({.Draw_Background, .Clip, .Fits_Width}, "###view")
 	if ui.parent(panel) { build_view_body(app, em) }
 }
 
@@ -838,7 +873,7 @@ build_markdown :: proc(app: ^App, l: ^Loaded_Entry, em: f32) {
 				// (this frame's room, from the window: the box's own width is the last frame's; the pane less its sides
 				// and the scroll bar)
 				u := ui.frame_new(Markdown_User)
-				u^ = {app = app, loaded = l, width = (app.room - app.remembered.split) * ui.scale() - em * (ui.SPACE_3 * 2 + 1)}
+				u^ = {app = app, loaded = l, width = app.room * ui.scale() - app.list_width - em * (ui.SPACE_3 * 2 + 1)}
 				// (prose and mono 0: the families the user chose, else papier's: the toolkit's text faces)
 				u.cfg = markdown.View_Options{user = u, link = markdown_link}
 				cfg := u.cfg

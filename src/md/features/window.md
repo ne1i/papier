@@ -19,6 +19,34 @@ date. These rules keep what the window shows consistent.
 - Each query has a number. The window applies the view of the newest one only, and keeps a newer list aside until that
   view comes. Without this, a fast typist sees the results of an old query over a new list.
 
+## The list beside the preview
+
+The list is the toolkit's foldable side panel (`ui.Side_Panel`, gui_toolkit's `src/md/features/side-panels.md`), at
+the left of the preview. `build_body` in `view.odin` builds it.
+
+- **The rule is the toolkit's.** Open, the list is its remembered width (48 % of the window at first, 220 px at
+  least). It folds to its rail when the preview would get less than 200 px. It opens again when the preview gets 1 em
+  more. No window breakpoint of papier's own: the old splitter clamped the list, which then pushed the preview under
+  its least in a narrow window.
+- **A manual fold or opening holds until the next crossing** of that threshold, either way. The fold button and a pull
+  of the rail's edge are the manual acts.
+- **The fold button is in the title bar, after papier's icon.** The list has no row of its own above its entries: its
+  first row is an entry, and it scrolls away. The title bar's start is above the list, at the same pixel open and
+  folded. Refused: a header row over the list only for the button (a row of height for one icon); the status bar (the
+  eye looks for a panel's button at its top).
+- **The rail is the list itself, narrow.** It is the same `ui.vlist` with the same state (`app.vl`): the selection, the
+  scroll, the keys, a click, a double click (copy), the menu and a drag out act as in the open list. Each row shows only
+  its mark: its thumbnail, else its kind's icon, in the accent colour when pinned. The selected row is lit as in the
+  list. Its tooltip is its first line. Up and Down move the selection there too: they are the search's keys
+  (`move_keys`), and the search keeps the keyboard. Refused: a second list for the rail (a second scroll and selection
+  that must follow the first), and a rail of the filters (they are in the title bar already).
+- **The width and the fold are remembered** in the window's state (`state.odin`): `split <width>` and
+  `fold <words>` (`ui.side_fold_format`). The build asks a write (`state_due`) when the room crosses the threshold, at
+  the end of a pull and at a manual fold; the loop writes it after the frame, through the reader. A restart in a window
+  of the same size keeps a manual choice; on the other side of the threshold the first build is a crossing.
+- **The preview fits its width** (`.Fits_Width`): what it shows (a long line, a picture) asks the row for no width,
+  so it never pushes the list's rule or the window's edge.
+
 ## The selected entry
 
 - Its text, its code's language and its QR text come from the reader; the newest selection wins. The preview says

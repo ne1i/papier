@@ -7,8 +7,8 @@ import changelog "gt:changelog"
 import toolbox "gt:toolbox"
 
 // The packages that have tests (this tool has none of its own: its steps are gui_toolkit's, tested there; check still
-// type-checks it).
-@(rodata) TESTS := [?]toolbox.Test_Package{{path = "src"}, {path = "src/history"}}
+// type-checks it). src's tests run one at a time: some take the toolkit's one test session (list_rail_test.odin).
+@(rodata) TESTS := [?]toolbox.Test_Package{{path = "src", one_thread = true}, {path = "src/history"}}
 
 // SQLite, from its amalgamation in ext/sqlite (3.54.1), compiled into build/sqlite/libsqlite3.a: the history's database
 // (src/sqlite links it). Built again when its sources or the flags below change (toolbox.build_c_lib's stamp).

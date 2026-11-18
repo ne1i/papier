@@ -75,8 +75,11 @@ first page, a video's frame, a picture), where the system has one.
 
 The buttons beside the entry copy, edit, show as a QR code, pin and remove it. Beside an image, they also copy the
 content of a QR code that the picture holds, and the text in the picture. The splitter between the list and the entry sets the width of the
-list. Papier remembers the size of the window, whether it was maximized, its place (X11 and Windows: on Wayland the
-compositor places windows) and the width of the list.
+list. When the window leaves the entry too little room, the list folds to a rail: a column of the entries' icons, the
+selected one lit, each with its first line as a tooltip; Up and Down still move in it. The panel button after papier's
+icon folds or opens the list, and a pull of the rail's edge opens it; that choice holds until the window crosses the
+width again. Papier remembers the size of the window, whether it was maximized, its place (X11 and Windows: on Wayland
+the compositor places windows), the width of the list and its fold.
 
 ## The menu of an entry
 

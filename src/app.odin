@@ -73,7 +73,9 @@ App :: struct {
 	visible:    bool,
 	hide_due:   bool,               // app_hide was asked: the window goes after this frame
 	quit:       bool,
-	remembered: Window_State,       // the list's width (state.odin)
+	remembered: Window_State,       // the list's width and fold (state.odin)
+	state_due:  bool,               // the build changed `remembered`: the loop writes it after the frame
+	list_width: f32,                // the list's width in this build, frame pixels (its rail's when folded)
 	placement:  prefs_page.Placement_Keeper,   // the window's place, the toolkit's window.placement
 
 	// the history, as the reader reads it (the watcher writes it): the window's thread touches no file (reader.odin)
@@ -239,6 +241,8 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 		if app_ocr_follow(app) { host.host_settle(h) }
 		if thumbs_take(app) { host.host_settle(h) }
 		if app.visible && !app.hide_due && !app.quit && !platform.is_closed(win) { host.host_frame(h) }
+		// (the fold or the width the frame changed: a write is the reader's, never the build's)
+		if app.state_due { app.state_due = false; state_write(app) }
 		drag_run(app)
 		if app.hide_due { app_hide_now(app) }
 	}
@@ -519,7 +523,7 @@ app_hide_now :: proc(app: ^App) {
 }
 
 // What the window remembers: its place and size (the toolkit's window.placement, written with the preferences), the
-// list's width (state.odin).
+// list's width and fold (state.odin).
 @(private = "file")
 app_remember :: proc(app: ^App) {
 	win := app.main.win
