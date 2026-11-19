@@ -3,6 +3,11 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.40.1] - 2026-11-19 22:11
+
+### Fixed
+- **Smooth animations on Wayland**: a menu, a dialog or a switch moves at each refresh of the screen, with no need to move the pointer.
+
 ## [0.40.0] - 2026-11-19 16:55
 
 ### Added
@@ -569,6 +574,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.40.1]: https://github.com/sachahjkl/papier/releases/tag/v0.40.1
 [0.40.0]: https://github.com/sachahjkl/papier/releases/tag/v0.40.0
 [0.39.0]: https://github.com/sachahjkl/papier/releases/tag/v0.39.0
 [0.38.0]: https://github.com/sachahjkl/papier/releases/tag/v0.38.0
