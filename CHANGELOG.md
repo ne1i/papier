@@ -3,6 +3,18 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.41.0] - 2026-11-20 11:58
+
+### Added
+- **Lower latency on Linux**: during an animation or a drag, each frame starts as late as it can and still reaches the next refresh, so it shows the newest input.
+- **A file's menu in the file dialogs**: copy its path or name, open it with its program, show it in its folder, rename it in place, or move it to the trash with an undo.
+
+### Changed
+- **Every menu filters what is typed**: a field at the top of a menu keeps the items that match, in every menu.
+
+### Fixed
+- **`nix run github:sachahjkl/papier` works.** A flake fetched from GitHub is a tarball without the gui_toolkit submodule, and the build stopped at once; the package now takes the toolkit from an input pinned to the submodule's commit.
+
 ## [0.40.2] - 2026-11-20 06:52
 
 ### Fixed
@@ -579,6 +591,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.41.0]: https://github.com/sachahjkl/papier/releases/tag/v0.41.0
 [0.40.2]: https://github.com/sachahjkl/papier/releases/tag/v0.40.2
 [0.40.1]: https://github.com/sachahjkl/papier/releases/tag/v0.40.1
 [0.40.0]: https://github.com/sachahjkl/papier/releases/tag/v0.40.0
