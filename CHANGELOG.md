@@ -3,6 +3,11 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.40.2] - 2026-11-20 06:52
+
+### Fixed
+- **The full frame rate on a second screen**: on Wayland a window on a 144 Hz screen beside a 60 Hz one moves at 144 frames a second, not 60.
+
 ## [0.40.1] - 2026-11-19 22:11
 
 ### Fixed
@@ -574,6 +579,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.40.2]: https://github.com/sachahjkl/papier/releases/tag/v0.40.2
 [0.40.1]: https://github.com/sachahjkl/papier/releases/tag/v0.40.1
 [0.40.0]: https://github.com/sachahjkl/papier/releases/tag/v0.40.0
 [0.39.0]: https://github.com/sachahjkl/papier/releases/tag/v0.39.0
