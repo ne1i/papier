@@ -3,6 +3,14 @@
 All notable changes to papier are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the versions follow [semantic versioning](https://semver.org/).
 
+## [0.43.0] - 2026-11-21 18:49
+
+### Changed
+- **Scroll wheel on settings fields and choices**: numeric settings (including sizes like 4 MiB), closed dropdowns, segmented controls and font pickers now step with the mouse wheel; collapsed sidebar icons show tooltips with no delay and sidebar rows stay on one line.
+
+### Fixed
+- **Readable details on selected rows**: secondary and coloured text on selected rows now keep at least 4.5:1 contrast in every theme, and search matches on selected rows are underlined instead of tinted.
+
 ## [0.42.0] - 2026-11-21 10:01
 
 ### Added
@@ -597,6 +605,7 @@ The command line is `--install`, `--uninstall`, `--status` and `--setup`, as in 
   `uninstall` and `status`.
 - **papiertool**: `build`, `test`, `check`, `live` (the real program in a headless sway), `shots`, `logo`, `package`,
   `notes`, `ship`, `site`.
+[0.43.0]: https://github.com/sachahjkl/papier/releases/tag/v0.43.0
 [0.42.0]: https://github.com/sachahjkl/papier/releases/tag/v0.42.0
 [0.41.0]: https://github.com/sachahjkl/papier/releases/tag/v0.41.0
 [0.40.2]: https://github.com/sachahjkl/papier/releases/tag/v0.40.2
