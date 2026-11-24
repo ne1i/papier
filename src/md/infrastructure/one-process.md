@@ -10,6 +10,17 @@ So papier is one process that starts with the session (`papier --hidden`) and ne
 - gui_toolkit's `host_hide` / `host_show` do this. On Wayland the surface and its role go at the hide and new ones come
   at the show, so no state of the last frames waits in the compositor.
 
+## The compositor's close
+
+A window manager's "close window" key (xdg_toplevel.close, WM_CLOSE) hides the window as Escape does: the window is
+never closed. The toolkit marks the window closed when the request comes; `host_frame` takes the close back
+(`cancel_close`) and calls the host's `close_asked`, which is papier's hide.
+
+- So the loop gives a shown window its frame whatever `is_closed` says. A loop that skipped the frame of a closed window
+  never took the close back: the close ended every wait at once, no frame freed the temporary memory, and papier spun,
+  its window frozen and its memory growing by tens of megabytes a second. `papiertool live` closes the window through
+  sway (`swaymsg kill`) and checks that it hides and comes back.
+
 ## The second start
 
 A second `papier` takes the instance name (`gt:instance`: a lock file and a Unix socket in `$XDG_RUNTIME_DIR`), finds it

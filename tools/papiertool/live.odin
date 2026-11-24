@@ -79,6 +79,7 @@ run_live :: proc(args: []string) -> cli.Exit {
 	live_window(&l)
 	live_preview(&l)
 	live_toggle(&l)
+	live_close(&l)
 	code := toolbox.program_session_stop(&l.session)
 	check(&l, code == 0, "papier quit: it ends, with 0 (%d)", code)
 	log, _ := os.read_entire_file(fmt.tprintf("%s/papier.log", dir), context.temp_allocator)
@@ -372,6 +373,29 @@ live_toggle :: proc(l: ^Live) {
 	check(l, wait_papier_window(l, mapped = true, focused = true), "the window comes to the front with the keyboard, not hidden")
 	check(l, sway_toggle(l), "the shortcut again")
 	check(l, wait_papier_window(l, mapped = false, focused = false), "the window had the keyboard: it hides")
+}
+
+// The compositor's close (a window manager's "close window" key: xdg_toplevel.close) hides the window as Escape does,
+// and the window comes back: the close is taken back by the frame that reads it, not left to end every wait.
+@(private = "file")
+live_close :: proc(l: ^Live) {
+	_, code := run_in(l, PROGRAM, "show")
+	check(l, code == 0, "papier show")
+	check(l, wait_papier_window(l, mapped = true, focused = true), "the window is shown, with the keyboard")
+	_, kcode := run_in(l, "swaymsg", "[app_id=\"papier\"]", "kill")
+	check(l, kcode == 0, "the compositor asks the window to close (swaymsg kill)")
+	check(l, wait_papier_window(l, mapped = false, focused = false), "the window hides")
+	// (--status's exit code says the install, which a session has none of; its text says whether papier runs)
+	out, _ := run_in(l, PROGRAM, "--status")
+	check(l, strings.contains(out, "running: true"), "papier still runs")
+	_, code = run_in(l, PROGRAM, "show")
+	check(l, code == 0, "papier show after the close")
+	c, ok := live_connect(l, "the DevTools server takes a connection after the close")
+	if !ok { return }
+	check(l, cdp.wait_for(&c, "hello from papier live", SESSION_WAIT), "a frame of the window again")
+	cdp.close(&c)
+	_, _ = run_in(l, PROGRAM, "hide")
+	check(l, wait_papier_window(l, mapped = false, focused = false), "papier hide")
 }
 
 // `papier toggle` started by sway, which gives it an activation token. Its homes are the session's, not the person's.

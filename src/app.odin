@@ -240,7 +240,10 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 		if view_decoded(app) { host.host_settle(h) }
 		if app_ocr_follow(app) { host.host_settle(h) }
 		if thumbs_take(app) { host.host_settle(h) }
-		if app.visible && !app.hide_due && !app.quit && !platform.is_closed(win) { host.host_frame(h) }
+		// (a window the compositor asked to close still has its frame: host_frame takes the close back and calls
+		// close_asked, which hides it. Skipped, the close stayed, every wait ended at once, and the loop spun without
+		// a frame to free its temporary memory)
+		if app.visible && !app.hide_due && !app.quit { host.host_frame(h) }
 		// (the fold or the width the frame changed: a write is the reader's, never the build's)
 		if app.state_due { app.state_due = false; state_write(app) }
 		drag_run(app)
