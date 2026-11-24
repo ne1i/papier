@@ -3,6 +3,8 @@ package history
 
 import "core:fmt"
 import "core:os"
+import "core:sync"
+import "core:thread"
 import "core:testing"
 import "gt:fsx"
 
@@ -206,4 +208,41 @@ temp_store_at :: proc(t: ^testing.T, dir: string) -> (s: Store, ok: bool) {
 	ok, why = open(&s, dir)
 	testing.expectf(t, ok, "the store opens: %s", why)
 	return
+}
+
+// Two connections open a history that does not exist yet at the same moment, as papier's watcher and its window's
+// reader do at the first start: both open it, neither gets "database is locked".
+@(test)
+two_opens_of_a_new_history_both_succeed :: proc(t: ^testing.T) {
+	Opener :: struct {
+		dir:   string,
+		start: ^sync.Barrier,
+		ok:    bool,
+		why:   string,
+	}
+	open_one :: proc(o: ^Opener) {
+		sync.barrier_wait(o.start)
+		s: Store
+		why: string
+		o.ok, why = open(&s, o.dir)
+		if o.ok { close(&s) } else { o.why = fmt.aprintf("%s", why) }
+	}
+	for round in 0 ..< 20 {
+		dir := fmt.aprintf("%s/papier_test_race_%d_%d", fsx.temp_dir(context.temp_allocator), os.get_pid(), round)
+		defer { fsx.remove_tree(dir); delete(dir) }
+		fsx.remove_tree(dir)
+		start: sync.Barrier
+		sync.barrier_init(&start, 2)
+		a, b := Opener{dir = dir, start = &start}, Opener{dir = dir, start = &start}
+		ta := thread.create_and_start_with_poly_data(&a, open_one, context)
+		tb := thread.create_and_start_with_poly_data(&b, open_one, context)
+		thread.join_multiple(ta, tb)
+		thread.destroy(ta)
+		thread.destroy(tb)
+		testing.expectf(t, a.ok, "round %d: the first open: %s", round, a.why)
+		testing.expectf(t, b.ok, "round %d: the second open: %s", round, b.why)
+		delete(a.why)
+		delete(b.why)
+		if !a.ok || !b.ok { return }
+	}
 }

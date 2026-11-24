@@ -21,6 +21,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:time"
 import "gt:fsx"
 import "../sqlite"
 
@@ -32,10 +33,22 @@ Store :: struct {
 	next_id: u64,
 }
 
+// (the journal's mode apart: it cannot change inside a transaction)
 @(private = "file")
-SCHEMA :: `
+JOURNAL :: `
 PRAGMA journal_mode = WAL;
 PRAGMA synchronous = NORMAL;
+`
+
+@(private = "file") JOURNAL_RETRY_MS :: 10
+
+// (one transaction that takes the write lock first, BEGIN IMMEDIATE, so a second connection that opens a new history at
+// the same moment waits its busy time for it. Statement by statement, each took a read lock then asked to write, and
+// SQLite fails such an upgrade at once with "database is locked" rather than wait: papier's watcher and its window's
+// reader open the history together at the first start, and the watcher's failure ended papier)
+@(private = "file")
+SCHEMA :: `
+BEGIN IMMEDIATE;
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS entries (id INTEGER PRIMARY KEY, time_ms INTEGER NOT NULL, pinned INTEGER NOT NULL,
 	kind INTEGER NOT NULL, key INTEGER NOT NULL, preview TEXT NOT NULL);
@@ -44,6 +57,7 @@ CREATE TABLE IF NOT EXISTS reps (entry INTEGER NOT NULL, ord INTEGER NOT NULL, m
 CREATE INDEX IF NOT EXISTS reps_hash ON reps (hash);
 CREATE TABLE IF NOT EXISTS blobs (hash INTEGER PRIMARY KEY, data BLOB NOT NULL);
 CREATE VIRTUAL TABLE IF NOT EXISTS texts USING fts5 (body, tokenize = 'trigram');
+COMMIT;
 `
 
 // Opens the store of `dir` (made when missing) and reads its list. ok = false, with why, when the database cannot be
@@ -58,7 +72,16 @@ open :: proc(s: ^Store, dir: string) -> (ok: bool, why: string) {
 	s.db, why = sqlite.open(strings.concatenate({dir, "/", DB_FILE}, context.temp_allocator))
 	if s.db == nil { return false, why }
 	s.dir = strings.clone(dir)
-	if done, err := sqlite.exec(s.db, SCHEMA); !done {
+	// (the switch to WAL fails at once while another connection makes the same new file, without the busy wait: it is
+	// tried again for as long as that wait)
+	done, err := sqlite.exec(s.db, JOURNAL)
+	for waited := 0; !done && sqlite.busy(s.db) && waited < sqlite.BUSY_WAIT_MS; waited += JOURNAL_RETRY_MS {
+		time.sleep(JOURNAL_RETRY_MS * time.Millisecond)
+		done, err = sqlite.exec(s.db, JOURNAL)
+	}
+	if done { done, err = sqlite.exec(s.db, SCHEMA) }
+	if !done {
+		_, _ = sqlite.exec(s.db, "ROLLBACK")   // (a schema that failed half-way: its transaction goes with the connection)
 		sqlite.close(s.db)
 		delete(s.dir)
 		s^ = {}

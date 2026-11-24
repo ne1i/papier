@@ -43,6 +43,7 @@ foreign lib {
 	column_bytes   :: proc(s: Stmt, i: c.int) -> c.int ---
 	@(link_name = "sqlite3_errmsg") errmsg_c :: proc(db: DB) -> cstring ---
 	busy_timeout   :: proc(db: DB, ms: c.int) -> c.int ---
+	errcode        :: proc(db: DB) -> c.int ---
 	free           :: proc(p: rawptr) ---
 }
 
@@ -59,6 +60,15 @@ open :: proc(path: string) -> (db: DB, why: string) {
 	}
 	busy_timeout(db, BUSY_WAIT_MS)
 	return db, ""
+}
+
+// Whether the last call on `db` failed because another connection held the database (SQLITE_BUSY, SQLITE_LOCKED): a
+// failure that a later try can get past.
+busy :: proc(db: DB) -> bool {
+	BUSY   :: 5
+	LOCKED :: 6
+	code := errcode(db) & 0xff   // (the primary code of an extended one)
+	return code == BUSY || code == LOCKED
 }
 
 close :: proc(db: DB) { if db != nil { close_v2(db) } }
