@@ -93,6 +93,18 @@ bindsym $mod+v exec papier toggle
 for_window [app_id="papier"] floating enable, resize set 900 560, move position cursor
 ```
 
+## Over every window, as a launcher
+
+On a compositor with the layer shell (Hyprland, Sway, KDE Plasma, niri, river, labwc…), papier can show above every
+window instead, as rofi or fuzzel do: the desktop dimmed, the history in the middle of the screen, the keyboard in the
+search at once. A click beside it or Escape hides it. It needs no window rule.
+
+```sh
+papier set window.overlay true    # then start papier again: papier quit; papier --hidden
+```
+
+The panel is `window.width` by `window.height`. Without the layer shell (GNOME), papier keeps its ordinary window.
+
 ## KDE Plasma
 
 `papier --install` puts papier in the autostart list. Bind `papier toggle` in System Settings, Shortcuts, Add New, Command or

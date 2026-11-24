@@ -51,6 +51,7 @@ the files, the tests) is [docs/architecture.md](../../docs/architecture.md).
   transaction per change, keys, limits, the import of 0.4
 - [features/window.md](features/window.md): the list that folds to a rail beside the preview; how the window stays
   consistent with late answers: the list and its view,
-  the numbered search, the selected entry (its form, Markdown's tables and diagrams), thumbnails, OCR
+  the numbered search, the selected entry (its form, Markdown's tables and diagrams), thumbnails, OCR; the overlay
+  (`window.overlay`): a layer surface over the output, the panel in it, the keyboard its own
 - [features/palette.md](features/palette.md): the toolkit's palette, what papier fills (`>`, `:`) and why no `@`,
   what can act as a version, the usage memory

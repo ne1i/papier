@@ -57,6 +57,7 @@ Settings :: struct {
 	shortcut:       string,   // Windows: window.shortcut
 	follow:         platform.Active_Monitor,   // Windows: window.follow
 	system_title:   bool,     // window.system_title
+	overlay:        bool,     // Linux: window.overlay
 	messages:       ui.Announce_Mode,   // general.messages: where "Copied", "Saved"... are said
 }
 

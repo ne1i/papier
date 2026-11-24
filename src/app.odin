@@ -77,6 +77,7 @@ App :: struct {
 	state_due:  bool,               // the build changed `remembered`: the loop writes it after the frame
 	list_width: f32,                // the list's width in this build, frame pixels (its rail's when folded)
 	placement:  prefs_page.Placement_Keeper,   // the window's place, the toolkit's window.placement
+	overlay:    bool,                          // the window is an overlay (window.overlay, and the compositor has the layer shell)
 
 	// the history, as the reader reads it (the watcher writes it): the window's thread touches no file (reader.odin)
 	reader:     Reader,
@@ -153,7 +154,7 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 
 	platform.set_app_id(APP_NAME)
 	platform.dragdrop_thread_init()   // (Windows: OLE, for an entry dragged out: drag.odin)
-	if !host.host_open(&app.main, &app.shared, {title = APP_TITLE, size = app.settings.size, integrated_title = !app.settings.system_title}, view_build, app) {
+	if !app_open_window(app) {
 		log.error("papier: no window")
 		return .Failed
 	}
@@ -184,8 +185,9 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 	h.close_asked = proc(h: ^host.Host) { app_hide((^App)(h.user)) }
 	app.devtools = devtools.start_from_env(win, "papier")
 	h.before_input = proc(h: ^host.Host) { app := (^App)(h.user); devtools.service(app.devtools, &h.state, &app.shared.r) }
-	// (the window where it was, at its size: the toolkit's window.placement; Wayland places it itself)
-	prefs_page.placement_restore(&app.placement, &app.prefs, win)
+	// (the window where it was, at its size: the toolkit's window.placement; Wayland places it itself. An overlay is
+	// the size of its output: it has no place of its own, and keeps the ordinary window's)
+	if !app.overlay { prefs_page.placement_restore(&app.placement, &app.prefs, win) }
 
 	// (the reader opens the history on its thread: the first list comes as a view, or why it cannot be opened)
 	reader_start(&app.reader, win, history_dir(app.settings.persist))
@@ -233,7 +235,7 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 		app_tray(app)
 		app_updates_follow(app)
 		// (the window's place kept as it moves, while it is shown: hidden, it is where it was left)
-		if app.visible { prefs_page.placement_track(&app.placement, &app.prefs, win, ui.now_ms()) }
+		if app.visible && !app.overlay { prefs_page.placement_track(&app.placement, &app.prefs, win, ui.now_ms()) }
 		config.user_writer_save(&app.prefs_writer, &app.prefs)
 		if config.user_writer_failed(&app.prefs_writer) { say(app, i18n.tr("The preferences cannot be written")) }
 		if app_follow_reader(app) { host.host_settle(h) }
@@ -279,6 +281,24 @@ app_run :: proc(prefs: ^config.Prefs, hidden: bool, owner: instance.Owner, setup
 		delete(launch)
 	}
 	return exit
+}
+
+// The window: an overlay when window.overlay asks it and the compositor has the layer shell, else the ordinary window.
+// An overlay shows at once (host_open): it is hidden again before its first frame, and shows as the ordinary one does,
+// at app_show. Its keyboard is its own from its showing (Exclusive), as a launcher's: the search takes what is typed.
+@(private = "file")
+app_open_window :: proc(app: ^App) -> bool {
+	if app.settings.overlay {
+		o := host.Open_Options{title = APP_TITLE, overlay = true, overlay_keyboard = .Exclusive}
+		if host.host_open(&app.main, &app.shared, o, view_build, app) {
+			app.overlay = true
+			host.host_hide(&app.main)
+			return true
+		}
+		log.warn("papier: no overlay window (the compositor has no layer shell): the ordinary window")
+		app.main = {}
+	}
+	return host.host_open(&app.main, &app.shared, {title = APP_TITLE, size = app.settings.size, integrated_title = !app.settings.system_title}, view_build, app)
 }
 
 @(private = "file")
@@ -531,7 +551,7 @@ app_hide_now :: proc(app: ^App) {
 app_remember :: proc(app: ^App) {
 	win := app.main.win
 	if win == nil || !platform.is_window_visible(win) { return }
-	prefs_page.placement_keep(&app.placement, &app.prefs, win)
+	if !app.overlay { prefs_page.placement_keep(&app.placement, &app.prefs, win) }
 	state_write(app)
 }
 

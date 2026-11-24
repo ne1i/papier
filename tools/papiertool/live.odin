@@ -84,8 +84,9 @@ run_live :: proc(args: []string) -> cli.Exit {
 	check(&l, code == 0, "papier quit: it ends, with 0 (%d)", code)
 	log, _ := os.read_entire_file(fmt.tprintf("%s/papier.log", dir), context.temp_allocator)
 	check(&l, !strings.contains(string(log), "error"), "papier wrote no error (%s/papier.log)", dir)
+	overlay_dir := live_overlay(&l)
 	fmt.printfln("live: %d checks, %d failed", l.checks, l.failures)
-	if !keep && l.failures == 0 { _ = os.remove_all(dir) }
+	if !keep && l.failures == 0 { _ = os.remove_all(dir); _ = os.remove_all(overlay_dir) }
 	return toolbox.ended(l.failures == 0)
 }
 
@@ -398,6 +399,80 @@ live_close :: proc(l: ^Live) {
 	check(l, wait_papier_window(l, mapped = false, focused = false), "papier hide")
 }
 
+// window.overlay: a session of its own, papier started with the overlay. The window is a layer surface over the whole
+// output (no window in sway's tree, the size of the output), the keyboard its own from its showing (typing goes to the
+// search with no click), and a click beside the panel hides it as Escape does. A hidden window shows as a new look, its
+// search empty: that a show after the click lists every entry again says that the click hid it.
+@(private = "file")
+live_overlay :: proc(l: ^Live) -> (dir: string) {
+	LIVE_OVERLAY_DIR :: LIVE_DIR + "-overlay"
+	TEXT :: "hello from the overlay"
+	OTHER :: "another entry of the overlay"
+	o: toolbox.Program_Session
+	if why := session_start(&o, LIVE_OVERLAY_DIR, {"window.overlay\ttrue"}); why != "" {
+		check(l, false, "overlay: papier --hidden runs (%s)", why)
+		toolbox.program_session_stop(&o)
+		return LIVE_OVERLAY_DIR
+	}
+	dir = strings.clone(o.dir, context.temp_allocator)
+	fmt.printfln("live: papier with window.overlay (%s)", dir)
+	check(l, copy_and_wait(&o, TEXT), "overlay: a text copied is in the history")
+	check(l, copy_and_wait(&o, OTHER), "overlay: another one")
+	_, code := run_in(&o, PROGRAM, "show")
+	check(l, code == 0, "overlay: papier show")
+	c, why := toolbox.program_session_connect(&o)
+	check(l, why == "", "overlay: the window serves the DevTools protocol%s", why == "" ? "" : fmt.tprintf(" (%s)", why))
+	if why == "" {
+		check(l, cdp.wait_for(&c, TEXT, SESSION_WAIT), "overlay: the window lists the history")
+		mapped, _ := papier_window(&o)
+		check(l, !mapped, "overlay: no window in sway's tree (a layer surface)")
+		width, height, _ := cdp.window_size(&c)
+		ow, oh := output_size(&o)
+		check(l, ow > 0 && int(width) == ow && int(height) == oh, "overlay: it covers the output (%.0f×%.0f, the output %d×%d)", width, height, ow, oh)
+		check(l, cdp.shot(&c, fmt.tprintf("%s/overlay.png", dir)), "overlay: a picture of it")
+		check(l, cdp.type_text(&c, "another"), "overlay: type in the search, with no click first")
+		check(l, cdp.wait_for(&c, TEXT, SESSION_WAIT, gone = true), "overlay: the search leaves the other entry out")
+		// (a corner of the output: the dimmed desktop, never the panel, whatever the panel's size)
+		pressed := cdp.send(&c, "Input.dispatchMouseEvent", `{"type":"mousePressed","x":4,"y":4,"button":"left","clickCount":1}`)
+		released := cdp.send(&c, "Input.dispatchMouseEvent", `{"type":"mouseReleased","x":4,"y":4,"button":"left","clickCount":1}`)
+		check(l, pressed && released, "overlay: a click beside the panel")
+		// (the frame that reads the click ends before the window goes: its answer says it was built)
+		_, _ = cdp.wait_idle(&c, SESSION_WAIT)
+		cdp.close(&c)
+	}
+	// (the click's hide, then this show: a new look lists both entries; a show of a window still shown keeps the search)
+	_, code = run_in(&o, PROGRAM, "show")
+	check(l, code == 0, "overlay: papier show after the click")
+	c2, why2 := toolbox.program_session_connect(&o)
+	if why2 == "" {
+		check(l, cdp.wait_for(&c2, TEXT, SESSION_WAIT), "overlay: the click had hidden it: the show is a new look, its search empty")
+		cdp.close(&c2)
+	} else {
+		check(l, false, "overlay: the DevTools server after the click (%s)", why2)
+	}
+	code = toolbox.program_session_stop(&o)
+	check(l, code == 0, "overlay: papier quit: it ends, with 0 (%d)", code)
+	log, _ := os.read_entire_file(fmt.tprintf("%s/papier.log", dir), context.temp_allocator)
+	check(l, !strings.contains(string(log), "error") && !strings.contains(string(log), "no overlay window"), "overlay: papier wrote no error, and had its overlay (%s/papier.log)", dir)
+	return
+}
+
+// The size of sway's first output, logical (its rect).
+@(private = "file")
+output_size :: proc(s: ^toolbox.Program_Session) -> (w, h: int) {
+	out, code := run_in(s, "swaymsg", "-r", "-t", "get_outputs")
+	if code != 0 { return }
+	v, err := json.parse_string(out, allocator = context.temp_allocator)
+	if err != nil { return }
+	list, _ := v.(json.Array)
+	if len(list) == 0 { return }
+	o, _ := list[0].(json.Object)
+	rect, _ := o["rect"].(json.Object)
+	w, _ = cdp.integer(rect["width"])
+	h, _ = cdp.integer(rect["height"])
+	return
+}
+
 // `papier toggle` started by sway, which gives it an activation token. Its homes are the session's, not the person's.
 @(private = "file")
 sway_toggle :: proc(l: ^Live) -> bool {
@@ -421,8 +496,8 @@ wait_papier_window :: proc(l: ^Live, mapped, focused: bool) -> bool {
 
 // Whether sway's tree has papier's window (on any workspace), and whether it has the keyboard.
 @(private = "file")
-papier_window :: proc(l: ^Live) -> (mapped, focused: bool) {
-	out, code := run_in(l, "swaymsg", "-r", "-t", "get_tree")
+papier_window :: proc(s: ^toolbox.Program_Session) -> (mapped, focused: bool) {
+	out, code := run_in(s, "swaymsg", "-r", "-t", "get_tree")
 	if code != 0 { return }
 	tree, err := json.parse_string(out, allocator = context.temp_allocator)
 	if err != nil { return }

@@ -99,3 +99,26 @@ because a system's thumbnailer can run 30 seconds.
 OCR takes a second or more, so it runs on the slow worker: one reading at a time, the newest ask first. At its start the
 slow worker asks whether the system can read text (`ocr.available` loads a library); the window offers the action only
 once it says so.
+
+## The overlay (`window.overlay`)
+
+Off by default. On, the window is a layer surface (wlr-layer-shell, the toolkit's `open_overlay`) above every window,
+as a launcher's (rofi, fuzzel): the desktop dimmed, the history in a panel at the centre, the keyboard the search's from
+the showing. An ordinary window is placed by the compositor, which a tiling one tiles: a person had to write a rule of
+their own to float it.
+
+- **The surface covers the output; the panel is drawn in it.** A click on the dimmed part hides the window, as Escape
+  does: the panel is `.Press_Stop`, so a press on it is never one on the dim under it. Refused: a layer surface the
+  panel's size. The click beside it would reach the window below and papier would stay on top of it, and nothing
+  would show that the desktop waits.
+- **The keyboard is exclusive** (`Overlay_Keyboard.Exclusive`): what is typed goes to the search with no click, and no
+  other window gets a key until the window hides. On-demand was refused: the overlay would take the keyboard only once
+  clicked, and the shortcut's first keys would go to the window below.
+- **The output is the compositor's choice at each show** (the overlay's area is left zero): the one the person works on,
+  not the one where papier first showed.
+- **The panel is `window.width` by `window.height`**, within the output less 2 em on each side. An overlay has no place
+  and its size is its output's: `window.placement` keeps the ordinary window's, untouched by the overlay.
+- **Chosen at the start** (`restart`): the window's kind is fixed when it opens. A compositor without the layer shell
+  (GNOME) gets the ordinary window, and the log says why.
+- The overlay opens shown (`host_open`); papier hides it before its first frame, and it shows at `app_show` as the
+  ordinary window does. A hide takes its layer surface away; a show makes a new one.

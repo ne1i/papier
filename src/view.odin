@@ -18,6 +18,7 @@ package papier
 
 import "base:runtime"
 import "core:fmt"
+import "core:math"
 import "core:strings"
 import diff "gt:diff"
 import "gt:draw"
@@ -296,10 +297,46 @@ move_keys :: proc(app: ^App) {
 view_build :: proc(h: ^host.Host, size: host.Vec2) {
 	app := (^App)(h.user)
 	em := ui.font_size()
-	app.room = size.x / max(ui.scale(), 0.01)
 	app_shortcut_follow(app)
 	// (the user's themes file: a task looks at it now and then, and reads it when it changed; app_params shows it)
 	if prefs_page.themes_file_poll(&app.themes_file, &app.main.state) { host.host_settle(&app.main) }
+	if !app.overlay {
+		app.room = size.x / max(ui.scale(), 0.01)
+		build_window(app, em)
+		return
+	}
+	// an overlay (window.overlay) covers its output: the desktop dimmed, the window's content in a panel at the centre
+	panel := overlay_panel_size(app, size, em)
+	app.room = panel.x / max(ui.scale(), 0.01)
+	ui.next({width = ui.fill(), height = ui.fill(), bg = OVERLAY_DIM})
+	dim := ui.build_box({.Clickable, .Draw_Background}, "###overlay_dim")
+	// (a click beside the panel goes as a launcher's does; a press on the panel is the panel's: .Press_Stop)
+	if ui.signal(dim).clicked { app_hide(app) }
+	if ui.parent(dim) {
+		ui.next({fixed_x = math.round((size.x - panel.x) / 2), fixed_y = math.round((size.y - panel.y) / 2), width = ui.px(panel.x), height = ui.px(panel.y), axis = .Y})
+		box := ui.build_box({.Floating_X, .Floating_Y, .Press_Stop, .Draw_Background, .Draw_Border, .Draw_Shadow, .Plate}, "###overlay_panel")
+		if ui.parent(box) { build_window(app, em) }
+	}
+}
+
+// What dims the desktop around an overlay's panel.
+@(private = "file")
+OVERLAY_DIM :: ui.Color{0, 0, 0, 0.35}
+
+// An overlay's panel: window.width by window.height (logical), within its output less a margin of 2 em on each side.
+@(private = "file")
+overlay_panel_size :: proc(app: ^App, size: host.Vec2, em: f32) -> host.Vec2 {
+	s := max(ui.scale(), 0.01)
+	margin := 2 * em
+	return {
+		max(min(f32(app.settings.size.x) * s, size.x - 2 * margin), 1),
+		max(min(f32(app.settings.size.y) * s, size.y - 2 * margin), 1),
+	}
+}
+
+// The window's content: the views, the page, the menus. The whole window, or an overlay's panel.
+@(private = "file")
+build_window :: proc(app: ^App, em: f32) {
 	// (the dialogs, the floating views, the docked ones: around the page, and over it)
 	if ui.views_frame(&app.views) {
 		// (a view docked at a side narrows the page: its room is the content's, as the last layout made it)

@@ -20,6 +20,7 @@ PREF_DEFS_SYSTEM := [?]config.Def{
 	{name = "capture.size_limit", title = i18n.later("Size limit"), description = i18n.later("A representation larger than this is not recorded."), kind = .Int, default = {i = 64 << 20}, min = 1024, max = 2 << 30, bounded = true, value_kind = .Size, unit = .Byte, tags = {"large", "limit", "bytes"}},
 	{name = "capture.ignore_secrets", title = i18n.later("Ignore secrets"), description = i18n.later("Do not record what a password manager marks as secret (x-kde-passwordManagerHint)."), kind = .Bool, default = {b = true}, tags = {"password", "private", "keepass"}},
 	{name = "capture.ignore_mimes", title = i18n.later("Ignore mimes"), description = i18n.later("MIME types, separated by commas: a copy that offers one of them is not recorded."), kind = .String, default = {s = ""}},
+	{name = "window.overlay", title = i18n.later("Overlay"), description = i18n.later("Show the history above every window, as a launcher does: a panel of window.width by window.height in the middle of the screen, the desktop dimmed around it, the keyboard its own until it hides. A click outside it hides it. Needs a compositor with the layer shell (Hyprland, sway, KDE Plasma, niri…); without it, the ordinary window."), kind = .Bool, default = {b = false}, restart = true, tags = {"layer shell", "popup", "launcher", "rofi", "float"}},
 	{name = "clipboard.keep", title = i18n.later("Keep"), description = i18n.later("When the program that owned the clipboard quits and empties it, put the last entry back."), kind = .Bool, default = {b = true}, tags = {"restore", "persist"}},
 }
 
@@ -40,6 +41,7 @@ prefs_read_system :: proc(p: ^config.Prefs, s: ^Settings, allocator := context.a
 	s.primary = config.bool_of(p, "capture.primary")
 	s.max_bytes = int(config.int_of(p, "capture.size_limit"))
 	s.keep = config.bool_of(p, "clipboard.keep")
+	s.overlay = config.bool_of(p, "window.overlay")
 }
 
 // Where the history is: the user's data folder (persist, the vendor's folder), else the session's runtime folder,
